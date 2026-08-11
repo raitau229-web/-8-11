@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仮想地図メモアプリ</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+        /* 仮想地図の土台 */
+        #map-container {
+            width: 100vw;
+            height: 100vh;
+            background-color: #e8f5e9; /* 薄い緑の土地 */
+            background-image: 
+                linear-gradient(rgba(0,128,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,128,0,0.05) 1px, transparent 1px);
+            background-size: 40px 40px; /* グリッド線 */
+            position: relative;
+            cursor: crosshair;
+        }
+        /* 仮想の街の中心オブジェクト */
+        #map-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(139, 69, 19, 0.2);
+            border: 2px dashed #8b4513;
+            border-radius: 8px;
+            padding: 20px;
+            color: #5d2e0b;
+            pointer-events: none; /* クリックを邪魔しない */
+        }
+        /* マップに立つピン（マーカー） */
+        .pin {
+            position: absolute;
+            font-size: 30px;
+            cursor: pointer;
+            user-select: none;
+            /* ピンの先端がクリック位置に重なるよう調整 */
+            transform: translate(-50%, -100%); 
+            transition: transform 0.1s;
+        }
+        .pin:hover {
+            transform: translate(-50%, -100%) scale(1.2);
+        }
+        /* ポップアップ（入力・詳細用）の共通スタイル */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 10;
+            width: 280px;
+        }
+        .popup h3 { margin-top: 0; color: #2e7d32; }
+        .popup input, .popup textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .popup button {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .popup .btn-cancel { background: #888; margin-right: 5px; }
+        /* 背景の黒いマスク */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.4);
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 仮想地図 -->
+    <div id="map-container">
+        <div id="map-center">仮想の街の中心</div>
+    </div>
+
+    <!-- 背景マスク -->
+    <div id="overlay"></div>
+
+    <!-- 入力ポップアップ -->
+    <div id="input-popup" class="popup">
+        <h3>ここにメモを追加</h3>
+        <input type="text" id="input-title" placeholder="タイトル（例: カフェ）">
+        <textarea id="input-memo" placeholder="メモ内容（例: 電源あり）" rows="3"></textarea>
+        <div style="text-align: right;">
+            <button class="btn-cancel" onclick="closePopup()">キャンセル</button>
+            <button onclick="saveMemo()">保存</button>
+        </div>
+    </div>
+
+    <!-- 詳細表示ポップアップ -->
+    <div id="detail-popup" class="popup">
+        <h3 id="detail-title"></h3>
+        <p id="detail-memo" style="white-space: pre-wrap; color: #555;"></p>
+        <div style="text-align: right;">
+            <button onclick="closePopup()">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        const mapContainer = document.getElementById('map-container');
+        const overlay = document.getElementById('overlay');
+        const inputPopup = document.getElementById('input-popup');
+        const detailPopup = document.getElementById('detail-popup');
+
+        let clickX = 0;
+        let clickY = 0;
+        let memos = []; // メモデータを保存する配列
+
+        // 地図をクリックした時の処理
+        mapContainer.addEventListener('click', (e) => {
+            // ピンそのものをクリックした場合は新規追加を開かない
+            if (e.target.classList.contains('pin')) return;
+
+            // クリックされた座標を取得
+            clickX = e.clientX;
+            clickY = e.clientY;
+
+            // 入力欄をリセットしてポップアップを表示
+            document.getElementById('input-title').value = '';
+            document.getElementById('input-memo').value = '';
+            overlay.style.display = 'block';
+            inputPopup.style.display = 'block';
+        });
+
+        // メモを保存する処理
+        function saveMemo() {
+            const title = document.getElementById('input-title').value;
+            const memoText = document.getElementById('input-memo').value;
+
+            if (!title) {
+                alert('タイトルを入力してください');
+                return;
+            }
+
+            // データオブジェクトを作成
+            const memoData = {
+                id: Date.now(),
+                x: clickX,
+                y: clickY,
+                title: title,
+                memo: memoText
+            };
+            memos.push(memoData);
+
+            // 地図上にピン（絵文字）を生成
+            const pin = document.createElement('div');
+            pin.className = 'pin';
+            pin.style.left = clickX + 'px';
+            pin.style.top = clickY + 'px';
+            pin.innerHTML = '📍';
+            pin.dataset.id = memoData.id;
+
+            // ピンをクリックした時に詳細を表示するイベント
+            pin.addEventListener('click', (e) => {
+                e.stopPropagation(); // 地図のクリックイベント発火を防ぐ
+                showDetail(memoData);
+            });
+
+            mapContainer.appendChild(pin);
+            closePopup();
+        }
+
+        // 詳細ポップアップを表示
+        function showDetail(data) {
+            document.getElementById('detail-title').innerText = data.title;
+            document.getElementById('detail-memo').innerText = data.memo || 'メモはありません';
+            overlay.style.display = 'block';
+            detailPopup.style.display = 'block';
+        }
+
+        // ポップアップを閉じる
+        function closePopup() {
+            overlay.style.display = 'none';
+            inputPopup.style.display = 'none';
+            detailPopup.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
