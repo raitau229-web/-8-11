@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>グルマッチ - お店選びスワイプアプリ</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --like-color: #4caf50;
+            --nope-color: #f44336;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #ff5a5f;
+            margin-bottom: 10px;
+        }
+
+        .card-container {
+            position: relative;
+            width: 340px;
+            height: 480px;
+            perspective: 1000px;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            cursor: grab;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform-origin: center bottom;
+        }
+
+        .card:active {
+            cursor: grabbing;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 65%;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            pointer-events: none;
+        }
+
+        .badge {
+            position: absolute;
+            top: 20px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        }
+        .badge.like {
+            right: 20px;
+            border: 4px solid var(--like-color);
+            color: var(--like-color);
+            transform: rotate(-15deg);
+        }
+        .badge.nope {
+            left: 20px;
+            border: 4px solid var(--nope-color);
+            color: var(--nope-color);
+            transform: rotate(15deg);
+        }
+
+        .card-info {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .restaurant-name {
+            font-size: 22px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            color: var(--text-color);
+        }
+
+        .restaurant-meta {
+            font-size: 14px;
+            color: #777;
+            margin: 0;
+        }
+
+        .restaurant-desc {
+            font-size: 14px;
+            color: #555;
+            margin: 10px 0 0 0;
+            line-height: 1.4;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s ease;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.9);
+        }
+
+        .btn-nope { color: var(--nope-color); }
+        .btn-like { color: var(--like-color); }
+
+        #match-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .match-list {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 300px;
+        }
+
+        .match-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍔 グルマッチ 🍕</h1>
+
+    <div id="swipe-screen">
+        <div class="card-container" id="cardContainer">
+            <!-- JSで自動生成 -->
+        </div>
+    </div>
+
+    <div class="buttons" id="actionButtons">
+        <button class="btn btn-nope" onclick="swipeLeft()">✖</button>
+        <button class="btn btn-like" onclick="swipeRight()">❤️</button>
+    </div>
+
+    <div id="match-screen">
+        <h2>🎉 行きたいお店リスト</h2>
+        <ul class="match-list" id="matchList"></ul>
+        <button onclick="location.reload()" style="padding: 10px 20px; border-radius: 5px; border: none; background: #ff5a5f; color: white; cursor: pointer; touch-action: manipulation;">もう一度選ぶ</button>
+    </div>
+
+    <script>
+        const restaurants = [
+            { name: "サイゼリヤ", category: "イタリアン", desc: "圧倒的コスパ。ミラノ風ドリアが鉄板。", img: "https://unsplash.com" },
+            { name: "マクドナルド", category: "バーガー", desc: "定番のファストフード。ポテトの誘惑には勝てない。", img: "https://unsplash.com" },
+            { name: "すき家", category: "牛丼", desc: "トッピングの種類が豊富。高菜明太マヨが人気。", img: "https://unsplash.com" },
+            { name: "ガスト", category: "ファミレス", desc: "チーズINハンバーグが有名。ドリンクバーで長居も。", img: "https://unsplash.com" },
+            { name: "大戸屋", category: "定食", desc: "体に優しい和食定食。黒酢あんかけが最高。", img: "https://unsplash.com" }
+        ];
+
+        const container = document.getElementById('cardContainer');
+        const matchList = document.getElementById('matchList');
+        const likedRestaurants = [];
+        let currentCard = null;
+
+        function initCards() {
+            container.innerHTML = '';
+            restaurants.forEach((data, index) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.style.zIndex = restaurants.length - index;
+                
+                card.innerHTML = `
+                    <div class="card-image" style="background-image: url('${data.img}')">
+                        <div class="badge like">LIKE</div>
+                        <div class="badge nope">NOPE</div>
+                    </div>
+                    <div class="card-info">
+                        <div>
+                            <h2 class="restaurant-name">${data.name}</h2>
+                            <p class="restaurant-meta">📁 ${data.category}</p>
+                        </div>
+                        <p class="restaurant-desc">${data.desc}</p>
+                    </div>
+                `;
+
+                container.appendChild(card);
+                setupDragAndDrop(card, data);
+            });
+            updateCurrentCard();
+        }
+
+        // 【修正完了】[0]を追加し、手前の1枚だけを正しく追跡するように直しました
+        function updateCurrentCard() {
+            const cards = container.querySelectorAll('.card');
+            if (cards.length > 0) {
+                currentCard = cards[0]; 
+            } else {
+                currentCard = null;
+                document.getElementById('swipe-screen').style.display = 'none';
+                document.getElementById('actionButtons').style.display = 'none';
+                document.getElementById('match-screen').style.display = 'block';
+                
+                matchList.innerHTML = likedRestaurants.length > 0 
+                    ? likedRestaurants.map(name => `<li class="match-item">⭐ ${name}</li>`).join('')
+                    : '<li class="match-item">選ばれたお店はありません</li>';
+            }
+        }
+
+        function setupDragAndDrop(card, data) {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+
+            const startDrag = (e) => {
+                if (card !== currentCard) return;
+                isDragging = true;
+                startX = e.type.includes('touch') ? e.touches.clientX : e.clientX;
+                card.style.transition = 'none';
+            };
+
+            const dragging = (e) => {
+                if (!isDragging) return;
+                if (e.cancelable) e.preventDefault();
+
+                const x = e.type.includes('touch') ? e.touches.clientX : e.clientX;
+                currentX = x - startX;
+                
+                const rotate = currentX / 10;
+                card.style.transform = `translateX(${currentX}px) rotate(${rotate}deg)`;
+
+                const likeBadge = card.querySelector('.badge.like');
+                const nopeBadge = card.querySelector('.badge.nope');
+                if (currentX > 0) {
+                    likeBadge.style.opacity = Math.min(currentX / 100, 1);
+                    nopeBadge.style.opacity = 0;
+                } else {
+                    nopeBadge.style.opacity = Math.min(-currentX / 100, 1);
+                    likeBadge.style.opacity = 0;
+                }
+            };
+
+            const endDrag = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+
+                const threshold = 130; 
+                if (currentX > threshold) {
+                    card.style.transform = 'translateX(600px) rotate(45deg)';
+                    card.style.opacity = '0';
+                    likedRestaurants.push(data.name); // ←ここから下が続きです
+                    setTimeout(() => { card.remove(); updateCurrentCard(); }, 200);
+                } else if (currentX < -threshold) {
+                    // 左スワイプ（パス）の処理
+                    card.style.transform = 'translateX(-600px) rotate(-45deg)';
+                    card.style.opacity = '0';
+                    setTimeout(() => { card.remove(); updateCurrentCard(); }, 200);
+                } else {
+                    // スワイプ距離が足りず、元の位置に戻る処理
+                    card.style.transform = 'translateX(0px) rotate(0deg)';
+                    card.querySelector('.badge.like').style.opacity = 0;
+                    card.querySelector('.badge.nope').style.opacity = 0;
+                }
+                currentX = 0; // ドラッグ位置をリセット
+            }; // endDrag 関数の終了
+
+            // マウスイベント（PC用）
+            card.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', dragging, { passive: false });
+            window.addEventListener('mouseup', endDrag);
+
+            // タッチイベント（スマホ用）
+            card.addEventListener('touchstart', startDrag, { passive: true });
+            window.addEventListener('touchmove', dragging, { passive: false });
+            window.addEventListener('touchend', endDrag);
+        } // setupDragAndDrop 関数の終了
+
+        // 下部の「❤️」ボタンを押したときの処理
+        function swipeRight() {
+            if (!currentCard) return;
+            const currentName = currentCard.querySelector('.restaurant-name').textContent;
+            likedRestaurants.push(currentName);
+            
+            const target = currentCard;
+            target.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+            target.style.transform = 'translateX(600px) rotate(45deg)';
+            target.style.opacity = '0';
+            setTimeout(() => { target.remove(); updateCurrentCard(); }, 200);
+        }
+
+        // 下部の「✖」ボタンを押したときの処理
+        function swipeLeft() {
+            if (!currentCard) return;
+            const target = currentCard;
+            target.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+            target.style.transform = 'translateX(-600px) rotate(-45deg)';
+            target.style.opacity = '0';
+            setTimeout(() => { target.remove(); updateCurrentCard(); }, 200);
+        }
+
+        // 最後に、アプリを開いた瞬間にカードを生成・表示する
+        initCards();
+    </script>
+</body>
+</html>
