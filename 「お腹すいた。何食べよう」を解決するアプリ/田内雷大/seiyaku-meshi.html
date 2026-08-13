@@ -1,0 +1,1009 @@
+<title>制約メシ — 枠内ジャストミート診断</title>
+<style>
+  :root{
+    --paper:#F1EEE3;
+    --surface:#FFFFFF;
+    --surface-2:#FAF7EC;
+    --ink:#211E17;
+    --ink-soft:#6E6858;
+    --ink-faint:#A29C88;
+    --line:#DAD5C4;
+    --accent:#E8542E;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#FCE4DB;
+    --money:#2F8F5B;
+    --money-soft:#E1F1E7;
+    --danger:#C93B3B;
+    --danger-soft:#FBE4E1;
+    --shadow: 0 1px 2px rgba(33,30,23,.06), 0 6px 16px rgba(33,30,23,.06);
+    --radius: 10px;
+    --font-display: 'Zen Maru Gothic','Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    --font-body: 'Hiragino Sans','Yu Gothic','Noto Sans JP',sans-serif;
+    --font-mono: 'DIN Alternate','Consolas','SF Mono',monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1B1913;
+      --surface:#242119;
+      --surface-2:#2B271D;
+      --ink:#F1EDE1;
+      --ink-soft:#B3AB96;
+      --ink-faint:#786F5A;
+      --line:#3C3627;
+      --accent:#FF7A52;
+      --accent-ink:#221208;
+      --accent-soft:#3C271C;
+      --money:#57C084;
+      --money-soft:#1E3327;
+      --danger:#E8685F;
+      --danger-soft:#3B2320;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1B1913;
+    --surface:#242119;
+    --surface-2:#2B271D;
+    --ink:#F1EDE1;
+    --ink-soft:#B3AB96;
+    --ink-faint:#786F5A;
+    --line:#3C3627;
+    --accent:#FF7A52;
+    --accent-ink:#221208;
+    --accent-soft:#3C271C;
+    --money:#57C084;
+    --money-soft:#1E3327;
+    --danger:#E8685F;
+    --danger-soft:#3B2320;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    margin:0;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--paper);
+  }
+  .app-header{
+    padding:18px 18px 4px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  .app-title{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:1.3rem;
+    letter-spacing:.02em;
+    margin:0;
+  }
+  .app-title small{
+    display:block;
+    font-family:var(--font-body);
+    font-weight:500;
+    font-size:.68rem;
+    color:var(--ink-faint);
+    letter-spacing:.08em;
+    margin-top:2px;
+  }
+  .reset-btn{
+    font-family:var(--font-body);
+    font-size:.72rem;
+    color:var(--ink-soft);
+    background:none;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:5px 12px;
+    cursor:pointer;
+  }
+  .reset-btn:hover{border-color:var(--ink-faint);}
+
+  /* ---- gauge strip ---- */
+  .gauge-strip{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    padding:12px 18px 18px;
+  }
+  .gauge-ticket{
+    position:relative;
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:12px 14px 14px;
+    overflow:hidden;
+  }
+  .gauge-ticket::after{
+    content:"";
+    position:absolute;
+    right:-7px; top:50%;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--paper);
+    transform:translateY(-50%);
+  }
+  .gauge-ticket::before{
+    content:"";
+    position:absolute;
+    left:-7px; top:50%;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--paper);
+    transform:translateY(-50%);
+  }
+  .gauge-label{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:.68rem;
+    color:var(--ink-soft);
+    letter-spacing:.04em;
+  }
+  .gauge-label svg{width:13px;height:13px;flex:none;}
+  .gauge-value{
+    font-family:var(--font-mono);
+    font-variant-numeric:tabular-nums;
+    font-weight:700;
+    font-size:1.5rem;
+    line-height:1.15;
+    margin-top:2px;
+  }
+  .gauge-value .unit{font-size:.62rem;font-weight:600;color:var(--ink-faint);margin-left:2px;font-family:var(--font-body);}
+  .gauge-value .of-total{font-size:.66rem;color:var(--ink-faint);font-weight:500;margin-left:5px;font-family:var(--font-body);}
+  .gauge-bar-track{
+    margin-top:8px;
+    height:6px;
+    border-radius:999px;
+    background:var(--line);
+    overflow:hidden;
+  }
+  .gauge-bar-fill{
+    height:100%;
+    border-radius:999px;
+    transition:width .4s ease;
+  }
+  .gauge-ticket.budget .gauge-bar-fill{background:var(--money);}
+  .gauge-ticket.calorie .gauge-bar-fill{background:var(--accent);}
+  .gauge-ticket.over .gauge-bar-fill{background:var(--danger);}
+  .gauge-ticket.over .gauge-value{color:var(--danger);}
+
+  /* ---- tabs ---- */
+  .tabbar{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    background:var(--surface-2);
+  }
+  .tab-btn{
+    font-family:var(--font-body);
+    font-size:.78rem;
+    font-weight:600;
+    color:var(--ink-faint);
+    background:none;
+    border:none;
+    padding:11px 4px 9px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+  }
+  .tab-btn svg{width:18px;height:18px;}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  main{flex:1;padding:18px;}
+  .screen{display:none;}
+  .screen.active{display:block;animation:fadein .25s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  @media (prefers-reduced-motion: reduce){
+    .screen.active{animation:none;}
+    .gauge-bar-fill{transition:none;}
+  }
+
+  h2.section-title{
+    font-family:var(--font-display);
+    font-size:1.02rem;
+    margin:0 0 3px;
+  }
+  .section-sub{font-size:.78rem;color:var(--ink-soft);margin:0 0 16px;}
+
+  /* mood grid */
+  .mood-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .mood-btn{
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 8px;
+    font-family:var(--font-body);
+    font-size:.85rem;
+    font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    transition:border-color .15s, background .15s;
+  }
+  .mood-btn span.emoji{font-size:1.5rem;}
+  .mood-btn:hover{border-color:var(--accent);}
+  .mood-btn.selected{border-color:var(--accent);background:var(--accent-soft);}
+
+  .diagnose-btn{
+    width:100%;
+    background:var(--accent);
+    color:var(--accent-ink);
+    border:none;
+    border-radius:999px;
+    padding:13px;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:.92rem;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .diagnose-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .diagnose-btn:hover:not(:disabled){filter:brightness(1.05);}
+
+  .proposal-list{margin-top:18px;display:flex;flex-direction:column;gap:14px;}
+  .proposal-card{
+    position:relative;
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .proposal-head{
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px dashed var(--line);
+  }
+  .proposal-head .tag{
+    font-size:.66rem;
+    font-weight:700;
+    letter-spacing:.05em;
+    color:var(--accent);
+    background:var(--accent-soft);
+    padding:3px 8px;
+    border-radius:999px;
+  }
+  .proposal-head .totals{
+    font-family:var(--font-mono);
+    font-variant-numeric:tabular-nums;
+    font-size:.8rem;
+    font-weight:700;
+    color:var(--ink-soft);
+  }
+  .proposal-items{padding:12px 16px;display:flex;flex-direction:column;gap:8px;}
+  .proposal-item{display:flex;justify-content:space-between;font-size:.85rem;gap:8px;}
+  .proposal-item .name{color:var(--ink);}
+  .proposal-item .meta{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink-faint);font-size:.78rem;white-space:nowrap;}
+  .proposal-foot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 16px 14px;
+    gap:10px;
+  }
+  .proposal-foot .leftover{font-size:.72rem;color:var(--money);}
+  .pick-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:999px;
+    padding:8px 16px;
+    font-size:.78rem;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .pick-btn:hover{filter:brightness(1.15);}
+
+  .empty-hint{
+    font-size:.82rem;
+    color:var(--ink-faint);
+    background:var(--surface-2);
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+    padding:14px;
+    text-align:center;
+  }
+
+  .confirm-banner{
+    margin-top:14px;
+    background:var(--money-soft);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    font-size:.82rem;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .confirm-banner button{
+    background:none;
+    border:1px solid var(--money);
+    color:var(--money);
+    border-radius:999px;
+    padding:5px 11px;
+    font-size:.72rem;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  /* scanner */
+  .cat-group{margin-bottom:14px;}
+  .cat-title{font-size:.72rem;color:var(--ink-faint);letter-spacing:.05em;margin:0 0 6px;font-weight:700;}
+  .item-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 10px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:8px;
+    margin-bottom:6px;
+    cursor:pointer;
+  }
+  .item-row.checked{border-color:var(--accent);background:var(--accent-soft);}
+  .item-row input{accent-color:var(--accent);width:16px;height:16px;flex:none;}
+  .item-row .name{flex:1;font-size:.85rem;}
+  .item-row .meta{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:.76rem;color:var(--ink-faint);white-space:nowrap;}
+
+  .scan-sticky{
+    position:sticky;
+    bottom:0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:11px 14px;
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .scan-sticky .sums{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:.8rem;font-weight:700;}
+  .scan-sticky .sums.over{color:var(--danger);}
+  .scan-btn{
+    background:var(--accent);color:var(--accent-ink);border:none;border-radius:999px;
+    padding:9px 16px;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap;
+  }
+  .scan-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .verdict-card{
+    margin-top:14px;
+    border-radius:var(--radius);
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+  }
+  .verdict-card.ok{background:var(--money-soft);}
+  .verdict-card.over{background:var(--danger-soft);}
+  .verdict-title{font-weight:700;font-size:.92rem;display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+  .verdict-card.ok .verdict-title{color:var(--money);}
+  .verdict-card.over .verdict-title{color:var(--danger);}
+  .verdict-body{font-size:.82rem;color:var(--ink);line-height:1.55;}
+  .swap-suggestion{
+    margin-top:10px;
+    background:var(--surface);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:.82rem;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .swap-suggestion .apply-btn{
+    background:var(--ink);color:var(--paper);border:none;border-radius:999px;
+    padding:6px 12px;font-size:.74rem;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .confirm-purchase-btn{
+    margin-top:12px;
+    width:100%;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:999px;
+    padding:11px;
+    font-weight:700;
+    font-size:.85rem;
+    cursor:pointer;
+  }
+  .confirm-purchase-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* reward */
+  .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .stat-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px;
+  }
+  .stat-card .label{font-size:.7rem;color:var(--ink-soft);display:flex;align-items:center;gap:5px;}
+  .stat-card .label svg{width:13px;height:13px;}
+  .stat-card .value{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:700;font-size:1.35rem;margin-top:4px;}
+  .stat-card.yen .value{color:var(--money);}
+  .stat-card.kcal .value{color:var(--accent);}
+
+  .ticket-progress{
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+    margin-bottom:18px;
+  }
+  .ticket-progress .top-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .ticket-progress .top-row .count{font-family:var(--font-display);font-weight:700;font-size:1.1rem;}
+  .ticket-progress .top-row .to-next{font-size:.72rem;color:var(--ink-faint);}
+  .ticket-progress .bar{height:8px;border-radius:999px;background:var(--line);overflow:hidden;}
+  .ticket-progress .bar-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .4s ease;}
+
+  .history-list{display:flex;flex-direction:column;gap:8px;}
+  .history-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:.8rem;
+  }
+  .history-item .htext{color:var(--ink);}
+  .history-item .hdate{color:var(--ink-faint);font-size:.7rem;display:block;margin-top:1px;}
+  .history-item .hval{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:700;color:var(--money);white-space:nowrap;}
+</style>
+
+<div class="app">
+  <header class="app-header">
+    <h1 class="app-title">制約メシ<small>枠内で、最適解を楽しむ。</small></h1>
+    <button class="reset-btn" id="resetBtn">今日をリセット</button>
+  </header>
+
+  <div class="gauge-strip">
+    <div class="gauge-ticket budget" id="budgetTicket">
+      <div class="gauge-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 15c0 1.1 1.3 2 3 2s3-.9 3-2-1.3-1.6-3-2-3-.9-3-2 1.3-2 3-2 3 .9 3 2" stroke-linecap="round"/></svg>
+        予算 残り
+      </div>
+      <div class="gauge-value" id="budgetValue">—<span class="unit">円</span></div>
+      <div class="gauge-bar-track"><div class="gauge-bar-fill" id="budgetBar" style="width:100%"></div></div>
+    </div>
+    <div class="gauge-ticket calorie" id="calorieTicket">
+      <div class="gauge-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .3 2-1 3-2 3-1.5 0-2-1.3-2-3 0-2.5 2-3.5 1-6-1 1-3 2-3 5 0 1.5.7 2.6 1 3-2 0-4-2-4-5 0-2 1-3 4-2Z"/></svg>
+        カロリー 残り
+      </div>
+      <div class="gauge-value" id="calorieValue">—<span class="unit">kcal</span></div>
+      <div class="gauge-bar-track"><div class="gauge-bar-fill" id="calorieBar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-screen="diagnose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3.2"/></svg>
+      診断
+    </button>
+    <button class="tab-btn" data-screen="scanner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9v6M11 9v6M14 9v3M17 9v6"/></svg>
+      スキャナー
+    </button>
+    <button class="tab-btn" data-screen="reward">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5V11c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6.5L12 3Z"/><path d="M9 12l2 2 4-4"/></svg>
+      ご褒美
+    </button>
+  </nav>
+
+  <main>
+    <!-- 診断 -->
+    <section class="screen active" id="screen-diagnose">
+      <h2 class="section-title">今、何を食べたら一番幸せ？</h2>
+      <p class="section-sub">気分を選ぶと、残り枠にピッタリ収まる組み合わせをAIが探します。</p>
+      <div class="mood-grid" id="moodGrid">
+        <button class="mood-btn" data-mood="ガッツリ"><span class="emoji">🍚</span>ガッツリ</button>
+        <button class="mood-btn" data-mood="さっぱり"><span class="emoji">🥗</span>さっぱり</button>
+        <button class="mood-btn" data-mood="甘いもの"><span class="emoji">🍡</span>甘いもの</button>
+        <button class="mood-btn" data-mood="温かいもの"><span class="emoji">♨️</span>温かいもの</button>
+      </div>
+      <button class="diagnose-btn" id="diagnoseBtn" disabled>この気分で診断する</button>
+      <div id="proposalArea"></div>
+    </section>
+
+    <!-- スキャナー -->
+    <section class="screen" id="screen-scanner">
+      <h2 class="section-title">買い物前トラップ回避スキャナー</h2>
+      <p class="section-sub">買う予定のものにチェック。枠をオーバーしたら、AIがすぐ代替案を出します。</p>
+      <div id="scannerList"></div>
+      <div class="scan-sticky">
+        <div class="sums" id="scanSums">0円 / 0kcal</div>
+        <button class="scan-btn" id="scanCheckBtn" disabled>結果を見る</button>
+      </div>
+      <div id="verdictArea"></div>
+    </section>
+
+    <!-- ご褒美 -->
+    <section class="screen" id="screen-reward">
+      <h2 class="section-title">ご褒美ストック</h2>
+      <p class="section-sub">浮いたお金とカロリーが、ここに貯まっていきます。</p>
+      <div class="stat-row">
+        <div class="stat-card yen">
+          <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 15c0 1.1 1.3 2 3 2s3-.9 3-2-1.3-1.6-3-2-3-.9-3-2 1.3-2 3-2 3 .9 3 2" stroke-linecap="round"/></svg>
+            ご褒美貯金
+          </div>
+          <div class="value" id="stockYen">0円</div>
+        </div>
+        <div class="stat-card kcal">
+          <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .3 2-1 3-2 3-1.5 0-2-1.3-2-3 0-2.5 2-3.5 1-6-1 1-3 2-3 5 0 1.5.7 2.6 1 3-2 0-4-2-4-5 0-2 1-3 4-2Z"/></svg>
+            蓄積カロリー
+          </div>
+          <div class="value" id="stockKcal">0kcal</div>
+        </div>
+      </div>
+      <div class="ticket-progress">
+        <div class="top-row">
+          <div class="count" id="ticketCount">🎫 0枚</div>
+          <div class="to-next" id="ticketToNext"></div>
+        </div>
+        <div class="bar"><div class="bar-fill" id="ticketBar" style="width:0%"></div></div>
+      </div>
+      <h2 class="section-title" style="font-size:.9rem;margin-bottom:8px;">履歴</h2>
+      <div class="history-list" id="historyList"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var KCAL_PER_TICKET = 800;
+  var STORAGE_KEY = "seiyaku_meshi_state_v1";
+
+  var ITEMS = [
+    {id:"butajiru", name:"大盛り豚汁", cat:"スープ", price:180, kcal:210, tags:["ガッツリ","温かいもの"]},
+    {id:"onigiri", name:"和風ツナマヨおにぎり", cat:"おにぎり", price:130, kcal:200, tags:["ガッツリ"]},
+    {id:"salachiki", name:"サラダチキン(ハーブ)", cat:"サラダ・チキン", price:220, kcal:115, tags:["さっぱり"]},
+    {id:"potage", name:"濃厚コーンポタージュ", cat:"スープ", price:150, kcal:120, tags:["温かいもの"]},
+    {id:"purin", name:"糖質オフプリン", cat:"デザート", price:160, kcal:95, tags:["甘いもの"]},
+    {id:"karaage", name:"唐揚げ弁当", cat:"弁当", price:498, kcal:750, tags:["ガッツリ"]},
+    {id:"makunouchi", name:"幕の内弁当", cat:"弁当", price:530, kcal:620, tags:["ガッツリ","温かいもの"]},
+    {id:"zarusoba", name:"ざるそば", cat:"麺", price:390, kcal:340, tags:["さっぱり"]},
+    {id:"hiyachu", name:"冷やし中華", cat:"麺", price:420, kcal:430, tags:["さっぱり"]},
+    {id:"oden", name:"おでん(大根・卵・こんにゃく)", cat:"おでん", price:210, kcal:140, tags:["温かいもの","ガッツリ"]},
+    {id:"yakitori", name:"焼き鳥串(塩)", cat:"おつまみ", price:140, kcal:180, tags:["ガッツリ"]},
+    {id:"potechi", name:"ポテトチップス", cat:"スナック", price:150, kcal:336, tags:["ガッツリ"]},
+    {id:"edamame", name:"枝豆スナック(ノンフライ)", cat:"スナック", price:130, kcal:120, tags:["さっぱり"]},
+    {id:"cream", name:"シュークリーム", cat:"デザート", price:140, kcal:220, tags:["甘いもの"]},
+    {id:"icecafe", name:"アイスカフェラテ", cat:"ドリンク", price:180, kcal:70, tags:["さっぱり"]},
+    {id:"hotcoffee", name:"ホットコーヒー", cat:"ドリンク", price:120, kcal:5, tags:["温かいもの","さっぱり"]},
+    {id:"misosoup", name:"カップみそ汁", cat:"スープ", price:110, kcal:40, tags:["温かいもの"]},
+    {id:"tamago", name:"半熟ゆで卵", cat:"たんぱく質", price:70, kcal:90, tags:["ガッツリ","さっぱり"]},
+    {id:"vegisalad", name:"ミニ野菜サラダ", cat:"サラダ", price:150, kcal:35, tags:["さっぱり"]},
+    {id:"daifuku", name:"大福(あんこ)", cat:"デザート", price:120, kcal:180, tags:["甘いもの"]},
+    {id:"taiyaki", name:"たい焼き", cat:"デザート", price:150, kcal:210, tags:["甘いもの","温かいもの"]},
+    {id:"pork", name:"生姜焼き用豚肉(100g)", cat:"食材", price:198, kcal:220, tags:["ガッツリ"]},
+    {id:"cabbage", name:"キャベツ千切りパック", cat:"食材", price:98, kcal:20, tags:["さっぱり"]},
+    {id:"rice", name:"パックご飯(150g)", cat:"食材", price:58, kcal:234, tags:["ガッツリ","温かいもの"]}
+  ];
+
+  var SIDE_CATS = ["デザート","ドリンク","スープ","サラダ","スナック"];
+
+  function itemById(id){ for(var i=0;i<ITEMS.length;i++){ if(ITEMS[i].id===id) return ITEMS[i]; } return null; }
+
+  function todayStr(){ return new Date().toDateString(); }
+
+  function defaultState(){
+    return {
+      date: todayStr(),
+      budgetTotal: 1200,
+      calorieTotal: 1400,
+      budgetRemaining: 1200,
+      calorieRemaining: 1400,
+      stockYen: 0,
+      stockKcal: 0,
+      history: []
+    };
+  }
+
+  function loadState(){
+    var raw;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch(e){ raw = null; }
+    var st = raw ? JSON.parse(raw) : defaultState();
+    if (st.date !== todayStr()){
+      st.date = todayStr();
+      st.budgetRemaining = st.budgetTotal;
+      st.calorieRemaining = st.calorieTotal;
+    }
+    return st;
+  }
+
+  function saveState(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){} }
+
+  var state = loadState();
+
+  var selectedMood = null;
+  var scannerChecked = {};
+
+  // ---------- rendering: gauges ----------
+  function renderGauges(){
+    var bPct = Math.max(0, Math.min(100, (state.budgetRemaining/state.budgetTotal)*100));
+    var cPct = Math.max(0, Math.min(100, (state.calorieRemaining/state.calorieTotal)*100));
+    document.getElementById("budgetValue").innerHTML =
+      Math.max(0,state.budgetRemaining).toLocaleString() + '<span class="unit">円</span><span class="of-total">/ '+state.budgetTotal.toLocaleString()+'円</span>';
+    document.getElementById("calorieValue").innerHTML =
+      Math.max(0,state.calorieRemaining).toLocaleString() + '<span class="unit">kcal</span><span class="of-total">/ '+state.calorieTotal.toLocaleString()+'kcal</span>';
+    document.getElementById("budgetBar").style.width = bPct+"%";
+    document.getElementById("calorieBar").style.width = cPct+"%";
+    document.getElementById("budgetTicket").classList.toggle("over", state.budgetRemaining<0);
+    document.getElementById("calorieTicket").classList.toggle("over", state.calorieRemaining<0);
+  }
+
+  // ---------- tabs ----------
+  var tabBtns = document.querySelectorAll(".tab-btn");
+  tabBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabBtns.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+      document.getElementById("screen-"+btn.dataset.screen).classList.add("active");
+      if (btn.dataset.screen === "scanner") renderScannerList();
+      if (btn.dataset.screen === "reward") renderReward();
+    });
+  });
+
+  // ---------- diagnose screen ----------
+  var moodBtns = document.querySelectorAll(".mood-btn");
+  moodBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      moodBtns.forEach(function(b){ b.classList.remove("selected"); });
+      btn.classList.add("selected");
+      selectedMood = btn.dataset.mood;
+      document.getElementById("diagnoseBtn").disabled = false;
+      document.getElementById("proposalArea").innerHTML = "";
+    });
+  });
+
+  function combosWithinLimit(mood, budget, calorie){
+    var pool = ITEMS.filter(function(it){
+      return it.tags.indexOf(mood) !== -1 || SIDE_CATS.indexOf(it.cat) !== -1;
+    });
+    var mains = ITEMS.filter(function(it){ return it.tags.indexOf(mood) !== -1; });
+    if (mains.length === 0) return [];
+
+    var results = [];
+    function tryCombo(arr){
+      var price=0, kcal=0, cats={};
+      for (var i=0;i<arr.length;i++){ price+=arr[i].price; kcal+=arr[i].kcal; cats[arr[i].cat]=1; }
+      if (price<=budget && kcal<=calorie && price>0){
+        var hasMain = arr.some(function(it){ return it.tags.indexOf(mood)!==-1; });
+        if (hasMain){
+          results.push({items:arr, price:price, kcal:kcal, catCount:Object.keys(cats).length});
+        }
+      }
+    }
+    // size 1
+    pool.forEach(function(a){ tryCombo([a]); });
+    // size 2
+    for (var i=0;i<pool.length;i++){
+      for (var j=i+1;j<pool.length;j++){
+        tryCombo([pool[i],pool[j]]);
+      }
+    }
+    // size 3 (capped pool to keep it fast & keep combos sensible)
+    var capped = pool.slice(0, 16);
+    for (var i2=0;i2<capped.length;i2++){
+      for (var j2=i2+1;j2<capped.length;j2++){
+        for (var k2=j2+1;k2<capped.length;k2++){
+          tryCombo([capped[i2],capped[j2],capped[k2]]);
+        }
+      }
+    }
+    return results;
+  }
+
+  function sameCombo(a,b){
+    if (!a || !b || a.items.length !== b.items.length) return false;
+    var idsA = a.items.map(function(i){return i.id;}).sort().join(",");
+    var idsB = b.items.map(function(i){return i.id;}).sort().join(",");
+    return idsA === idsB;
+  }
+
+  document.getElementById("diagnoseBtn").addEventListener("click", function(){
+    if (!selectedMood) return;
+    var budget = Math.max(0, state.budgetRemaining);
+    var calorie = Math.max(0, state.calorieRemaining);
+    var combos = combosWithinLimit(selectedMood, budget, calorie);
+    var area = document.getElementById("proposalArea");
+
+    if (combos.length === 0){
+      area.innerHTML = '<div class="empty-hint" style="margin-top:16px;">今の残り枠（'+budget+'円 / '+calorie+'kcal）だと、'+selectedMood+'系でぴったりの組み合わせが見つかりませんでした。<br>次の食事までとっておくのも手です。</div>';
+      return;
+    }
+
+    var byKcalDesc = combos.slice().sort(function(a,b){
+      if (b.kcal !== a.kcal) return b.kcal - a.kcal;
+      return b.price - a.price;
+    });
+    var proposalA = byKcalDesc[0];
+
+    var byVariety = combos.slice().sort(function(a,b){
+      if (b.catCount !== a.catCount) return b.catCount - a.catCount;
+      return b.price - a.price;
+    });
+    var proposalB = byVariety[0];
+    if (sameCombo(proposalA, proposalB)){
+      for (var i=1;i<byVariety.length;i++){
+        if (!sameCombo(proposalA, byVariety[i])){ proposalB = byVariety[i]; break; }
+      }
+    }
+
+    var proposals = sameCombo(proposalA, proposalB) ? [{combo:proposalA, tag:"最強の組み合わせ"}] :
+      [{combo:proposalA, tag:"満腹重視"}, {combo:proposalB, tag:"満足感重視"}];
+
+    var html = '<div class="proposal-list">';
+    proposals.forEach(function(p, idx){
+      var leftoverYen = budget - p.combo.price;
+      var leftoverKcal = calorie - p.combo.kcal;
+      html += '<div class="proposal-card">';
+      html += '  <div class="proposal-head"><span class="tag">提案'+(idx===0?"A":"B")+'・'+p.tag+'</span><span class="totals">'+p.combo.price+'円 / '+p.combo.kcal+'kcal</span></div>';
+      html += '  <div class="proposal-items">';
+      p.combo.items.forEach(function(it){
+        html += '<div class="proposal-item"><span class="name">'+it.name+'</span><span class="meta">'+it.price+'円・'+it.kcal+'kcal</span></div>';
+      });
+      html += '  </div>';
+      html += '  <div class="proposal-foot"><span class="leftover">'+(leftoverYen>0||leftoverKcal>0 ? (leftoverYen+'円 '+leftoverKcal+'kcal 余ります':'枠ぴったり！') )+'</span>';
+      html += '    <button class="pick-btn" data-idx="'+idx+'">これに決定</button></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    area.innerHTML = html;
+
+    area.querySelectorAll(".pick-btn").forEach(function(btn, idx){
+      btn.addEventListener("click", function(){
+        var p = proposals[idx];
+        var leftoverYen = budget - p.combo.price;
+        var leftoverKcal = calorie - p.combo.kcal;
+        state.budgetRemaining = state.budgetRemaining - p.combo.price;
+        state.calorieRemaining = state.calorieRemaining - p.combo.kcal;
+        saveState();
+        renderGauges();
+        var banner = document.createElement("div");
+        banner.className = "confirm-banner";
+        banner.innerHTML = '<span>決定！ '+p.combo.price+'円・'+p.combo.kcal+'kcalを消費しました。'+
+          (leftoverYen>0 ? ' 余った'+leftoverYen+'円をご褒美貯金に回しますか？' : '') +'</span>';
+        if (leftoverYen>0){
+          var addBtn = document.createElement("button");
+          addBtn.textContent = "貯金する";
+          addBtn.addEventListener("click", function(){
+            state.stockYen += leftoverYen;
+            if (leftoverKcal>0) state.stockKcal += leftoverKcal;
+            state.history.unshift({date:new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}), label:"診断の余り分を貯金", yen:leftoverYen, kcal:Math.max(0,leftoverKcal)});
+            saveState();
+            banner.remove();
+          });
+          banner.appendChild(addBtn);
+        }
+        area.innerHTML = "";
+        area.appendChild(banner);
+      });
+    });
+  });
+
+  // ---------- scanner screen ----------
+  var CATS_ORDER = [];
+  ITEMS.forEach(function(it){ if (CATS_ORDER.indexOf(it.cat)===-1) CATS_ORDER.push(it.cat); });
+
+  function renderScannerList(){
+    var list = document.getElementById("scannerList");
+    var html = "";
+    CATS_ORDER.forEach(function(cat){
+      var itemsInCat = ITEMS.filter(function(it){ return it.cat===cat; });
+      html += '<div class="cat-group"><p class="cat-title">'+cat+'</p>';
+      itemsInCat.forEach(function(it){
+        var checked = !!scannerChecked[it.id];
+        html += '<label class="item-row'+(checked?" checked":"")+'" data-id="'+it.id+'">'+
+          '<input type="checkbox" '+(checked?"checked":"")+' data-id="'+it.id+'">'+
+          '<span class="name">'+it.name+'</span>'+
+          '<span class="meta">'+it.price+'円・'+it.kcal+'kcal</span></label>';
+      });
+      html += '</div>';
+    });
+    list.innerHTML = html;
+
+    list.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
+      cb.addEventListener("change", function(){
+        scannerChecked[cb.dataset.id] = cb.checked;
+        cb.closest(".item-row").classList.toggle("checked", cb.checked);
+        appliedSwapSavings = {yen:0, kcal:0};
+        updateScanSums();
+        document.getElementById("verdictArea").innerHTML = "";
+      });
+    });
+    updateScanSums();
+  }
+
+  function selectedScanItems(){
+    return Object.keys(scannerChecked).filter(function(id){ return scannerChecked[id]; }).map(itemById).filter(Boolean);
+  }
+
+  function updateScanSums(){
+    var items = selectedScanItems();
+    var price=0, kcal=0;
+    items.forEach(function(it){ price+=it.price; kcal+=it.kcal; });
+    var sumsEl = document.getElementById("scanSums");
+    var over = price > state.budgetRemaining || kcal > state.calorieRemaining;
+    sumsEl.textContent = price+"円 / "+kcal+"kcal　(残り "+Math.max(0,state.budgetRemaining)+"円 / "+Math.max(0,state.calorieRemaining)+"kcal)";
+    sumsEl.classList.toggle("over", over);
+    document.getElementById("scanCheckBtn").disabled = items.length===0;
+  }
+
+  function findSwap(currentItem, budgetHeadroom, calorieHeadroom){
+    var candidates = ITEMS.filter(function(it){
+      return it.cat===currentItem.cat && it.id!==currentItem.id &&
+        it.price <= currentItem.price + budgetHeadroom &&
+        it.kcal <= currentItem.kcal + calorieHeadroom &&
+        (it.price < currentItem.price || it.kcal < currentItem.kcal);
+    });
+    if (candidates.length===0) return null;
+    candidates.sort(function(a,b){
+      var scoreA = (currentItem.price-a.price) + (currentItem.kcal-a.kcal);
+      var scoreB = (currentItem.price-b.price) + (currentItem.kcal-b.kcal);
+      return scoreB-scoreA;
+    });
+    return candidates[0];
+  }
+
+  var lastSwap = null;
+  var appliedSwapSavings = {yen:0, kcal:0};
+
+  document.getElementById("scanCheckBtn").addEventListener("click", function(){
+    var items = selectedScanItems();
+    var price=0, kcal=0;
+    items.forEach(function(it){ price+=it.price; kcal+=it.kcal; });
+    var budget = Math.max(0,state.budgetRemaining), calorie = Math.max(0,state.calorieRemaining);
+    var overYen = price - budget, overKcal = kcal - calorie;
+    var area = document.getElementById("verdictArea");
+    lastSwap = null;
+
+    if (overYen<=0 && overKcal<=0){
+      area.innerHTML =
+        '<div class="verdict-card ok"><div class="verdict-title">✅ 枠内に収まっています</div>'+
+        '<div class="verdict-body">合計 '+price+'円 / '+kcal+'kcal。予算はあと '+(budget-price)+'円、カロリーはあと '+(calorie-kcal)+'kcal 残ります。</div></div>'+
+        '<button class="confirm-purchase-btn" id="confirmPurchaseBtn">この内容で確定する</button>';
+      bindConfirmPurchase(price, kcal, appliedSwapSavings.yen, appliedSwapSavings.kcal);
+      return;
+    }
+
+    // find the worst offender to swap: prioritize category in discretionary list, else priciest/highest kcal item
+    var swapItem = null, swapWith = null;
+    var sortedBySnack = items.slice().sort(function(a,b){
+      var aScore = (SIDE_CATS.indexOf(a.cat)!==-1?1000:0) + a.price*0.5 + a.kcal*0.5;
+      var bScore = (SIDE_CATS.indexOf(b.cat)!==-1?1000:0) + b.price*0.5 + b.kcal*0.5;
+      return bScore-aScore;
+    });
+    for (var i=0;i<sortedBySnack.length;i++){
+      var cand = sortedBySnack[i];
+      var headroomYen = overYen>0 ? cand.price : 999999;
+      var headroomKcal = overKcal>0 ? cand.kcal : 999999;
+      var alt = findSwap(cand, headroomYen, headroomKcal);
+      if (alt){
+        var newPrice = price - cand.price + alt.price;
+        var newKcal = kcal - cand.kcal + alt.kcal;
+        if (newPrice<=budget && newKcal<=calorie){
+          swapItem = cand; swapWith = alt; break;
+        }
+      }
+    }
+
+    var reasonParts = [];
+    if (overYen>0) reasonParts.push("予算を"+overYen+"円オーバー");
+    if (overKcal>0) reasonParts.push("カロリーを"+overKcal+"kcalオーバー");
+
+    var html = '<div class="verdict-card over"><div class="verdict-title">⚠️ 枠をオーバーしています</div>'+
+      '<div class="verdict-body">このままだと'+reasonParts.join("・")+'します（合計 '+price+'円 / '+kcal+'kcal）。</div>';
+
+    if (swapItem && swapWith){
+      var newPrice = price - swapItem.price + swapWith.price;
+      var newKcal = kcal - swapItem.kcal + swapWith.kcal;
+      var saveYen = price-newPrice, saveKcal = kcal-newKcal;
+      html += '<div class="swap-suggestion"><span>'+swapItem.name+' を <b>'+swapWith.name+'</b> に変えると '+
+        (saveYen>0?"-"+saveYen+"円 ":"")+(saveKcal>0?"-"+saveKcal+"kcal":"")+' で枠内に収まります！</span>'+
+        '<button class="apply-btn" id="applySwapBtn">適用する</button></div>';
+      lastSwap = {from:swapItem, to:swapWith, saveYen:Math.max(0,saveYen), saveKcal:Math.max(0,saveKcal)};
+    } else {
+      html += '<div class="swap-suggestion"><span>ちょうど良い代替が見つかりませんでした。どれか1品を減らしましょう。</span></div>';
+    }
+    html += '</div>';
+    area.innerHTML = html;
+
+    var applyBtn = document.getElementById("applySwapBtn");
+    if (applyBtn){
+      applyBtn.addEventListener("click", function(){
+        appliedSwapSavings = {yen:lastSwap.saveYen, kcal:lastSwap.saveKcal};
+        scannerChecked[lastSwap.from.id] = false;
+        scannerChecked[lastSwap.to.id] = true;
+        renderScannerList();
+        document.getElementById("scanCheckBtn").click();
+      });
+    }
+  });
+
+  function bindConfirmPurchase(price, kcal, savedYen, savedKcal){
+    var btn = document.getElementById("confirmPurchaseBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function(){
+      state.budgetRemaining -= price;
+      state.calorieRemaining -= kcal;
+      if (savedYen>0 || savedKcal>0){
+        state.stockYen += savedYen;
+        state.stockKcal += savedKcal;
+        state.history.unshift({date:new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}), label:"トラップ回避で節約", yen:savedYen, kcal:savedKcal});
+      }
+      saveState();
+      renderGauges();
+      scannerChecked = {};
+      appliedSwapSavings = {yen:0, kcal:0};
+      renderScannerList();
+      document.getElementById("verdictArea").innerHTML = '<div class="verdict-card ok"><div class="verdict-title">🎉 記録しました</div><div class="verdict-body">今日の残り枠に反映しました。</div></div>';
+    });
+  }
+
+  // ---------- reward screen ----------
+  function renderReward(){
+    document.getElementById("stockYen").textContent = state.stockYen.toLocaleString()+"円";
+    document.getElementById("stockKcal").textContent = state.stockKcal.toLocaleString()+"kcal";
+    var tickets = Math.floor(state.stockKcal / KCAL_PER_TICKET);
+    var remainder = state.stockKcal % KCAL_PER_TICKET;
+    document.getElementById("ticketCount").textContent = "🎫 "+tickets+"枚";
+    document.getElementById("ticketToNext").textContent = "次のチートデイ券まで あと "+(KCAL_PER_TICKET-remainder)+"kcal";
+    document.getElementById("ticketBar").style.width = ((remainder/KCAL_PER_TICKET)*100)+"%";
+
+    var histEl = document.getElementById("historyList");
+    if (state.history.length===0){
+      histEl.innerHTML = '<div class="empty-hint">まだ履歴がありません。診断やスキャナーで枠を守ると、ここに貯まります。</div>';
+      return;
+    }
+    var html = "";
+    state.history.slice(0,30).forEach(function(h){
+      html += '<div class="history-item"><div><span class="htext">'+h.label+'</span><span class="hdate">'+h.date+'</span></div>'+
+        '<span class="hval">+'+h.yen+'円'+(h.kcal>0?" / +"+h.kcal+"kcal":"")+'</span></div>';
+    });
+    histEl.innerHTML = html;
+  }
+
+  // ---------- reset ----------
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    state.budgetRemaining = state.budgetTotal;
+    state.calorieRemaining = state.calorieTotal;
+    saveState();
+    renderGauges();
+    scannerChecked = {};
+    document.getElementById("proposalArea").innerHTML = "";
+    document.getElementById("verdictArea").innerHTML = "";
+    if (document.getElementById("screen-scanner").classList.contains("active")) renderScannerList();
+  });
+
+  renderGauges();
+})();
+</script>
