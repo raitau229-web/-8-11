@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>街レコ - 和歌山ローカル食情報</title>
+<style>
+  :root{
+    --teal:#0f766e;
+    --orange:#f97316;
+    --orange-light:#ffedd5;
+    --bg:#faf7f2;
+    --card:#ffffff;
+    --ink:#1f2937;
+    --ink-soft:#6b7280;
+    --border:#e7e2d9;
+    --radius:16px;
+    --shadow: 0 2px 10px rgba(31,41,55,0.06), 0 1px 2px rgba(31,41,55,0.04);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family: "Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh;}
+  button{cursor:pointer; font-family:inherit;}
+
+  header.app-header{ position:sticky;top:0;z-index:50; background:linear-gradient(120deg,var(--orange),#ea6a0c); color:#fff; box-shadow:var(--shadow); }
+  .header-inner{ max-width:1000px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  .logo{ font-size:20px; font-weight:800; display:flex; align-items:center; gap:8px; cursor:pointer;}
+  .logo .tag{ font-size:11px; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:99px; }
+  .header-subtitle { width:100%; font-size:11px; opacity:0.9; margin-top:-4px;}
+  .header-right { font-size: 12px; font-weight: 600; display:flex; align-items:center; gap:8px; background: rgba(0,0,0,0.15); padding: 4px 10px; border-radius: 99px; cursor:pointer;}
+
+  main{ max-width:1000px; margin:0 auto; padding:20px 20px 80px; }
+  .view{ display:none; animation:fadeIn .25s ease; }
+  .view.active{ display:block; }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .center-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px 20px; box-shadow:var(--shadow); text-align:center; margin-top: 20px;}
+  .grid { display:grid; gap:16px; }
+  .form-group { margin-bottom: 14px; text-align: left;}
+  .form-group label { display:block; font-size:12px; color:var(--ink-soft); font-weight:600; margin-bottom:6px;}
+  input[type=text], input[type=password], input[type=number], input[type=date], select, textarea { width: 100%; border:1px solid var(--border); border-radius:10px; padding:12px; font-size:14px; background:#fff;}
+
+  .top-split-layout { display: flex; gap: 24px; align-items: stretch; margin-top: 10px; }
+  .top-left-desc { flex: 1.2; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); text-align: left; }
+  .top-right-auth { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+
+  @media (max-width: 768px) {
+    .top-split-layout { flex-direction: column; }
+  }
+
+  .btn{ border-radius:10px; padding:12px 20px; font-size:15px; font-weight:700; border:1px solid transparent; display:inline-flex; align-items:center; justify-content:center; gap:8px; transition: .15s;}
+  .btn-primary{ background:var(--orange); color:#fff; }
+  .btn-outline{ background:#fff; border-color:var(--border); color:var(--ink); }
+  .btn-teal{ background:var(--teal); color:#fff; }
+  .btn-danger{ background:#ef4444; color:#fff; }
+  .btn-block{ width: 100%; }
+  .btn-sm{ padding:6px 12px; font-size:13px; }
+
+  .search-panel { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:20px; box-shadow:var(--shadow); }
+  .search-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .search-row:last-child { margin-bottom:0; }
+  .search-row > * { flex:1; min-width:140px; }
+
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column; cursor:pointer; transition:transform 0.15s ease;}
+  .card:hover{ transform:translateY(-2px); }
+  .card-img { width:100%; height:160px; object-fit:cover; background:#eee; }
+  .card-content { padding:16px; }
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;}
+  .shop-info { display:flex; align-items:center; gap:10px; }
+  .shop-icon { font-size: 22px; background:var(--bg); border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .shop-name { font-weight:800; font-size:16px; }
+  .meta-badges { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center;}
+  .distance-badge { font-size:11px; background:var(--teal); color:#fff; padding:2px 6px; border-radius:99px; font-weight:bold;}
+  .rating-badge { font-size:11px; background:#fef3c7; color:#d97706; padding:2px 6px; border-radius:99px; font-weight:bold; }
+  
+  .feature-tag { font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:6px; font-weight:bold; display:inline-block; }
+
+  .shop-modal-tabs { display:flex; gap:8px; margin-bottom:14px; border-bottom:2px solid var(--border); padding-bottom:8px; }
+  .shop-modal-tab { flex:1; padding:8px; text-align:center; font-weight:bold; font-size:13px; border-radius:8px; cursor:pointer; color:var(--ink-soft); background:var(--bg); }
+  .shop-modal-tab.active { background:var(--teal); color:#fff; }
+
+  .admin-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; background:var(--card); padding:8px; border-radius:12px; border:1px solid var(--border); }
+  .admin-tab-btn { flex:1; min-width:100px; padding:10px; background:transparent; border:none; font-weight:bold; font-size:13px; border-radius:8px; color:var(--ink-soft); cursor:pointer; }
+  .admin-tab-btn.active { background:var(--teal); color:#fff; }
+  .admin-panel { display:none; }
+  .admin-panel.active { display:block; }
+
+  .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index:100; padding:16px; }
+  .modal-overlay.active { display:flex; }
+  .modal-content { background:#fff; width:100%; max-width:600px; max-height:90vh; border-radius:var(--radius); overflow-y:auto; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+
+  .modal-item-card { border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px; display:flex; gap:12px; align-items:center; }
+  .modal-item-img { width:70px; height:70px; object-fit:cover; border-radius:8px; flex-shrink:0; }
+
+  .order-item { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; font-size:13px; }
+
+  .digital-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: #fff; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+  .barcode-box { background: #fff; padding: 12px; border-radius: 8px; display: inline-block; margin: 12px 0; }
+  .fake-barcode { height: 40px; width: 180px; background: repeating-linear-gradient(90deg, #000, #000 2px, #fff 2px, #fff 5px); }
+
+  .warning-box { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px; border-radius:10px; font-size:12px; margin-top:14px; font-weight:bold; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div>
+      <div class="logo" onclick="resetApp()">📢 街レコ <span class="tag">アプリ限定お得情報</span></div>
+      <div class="header-subtitle">和歌山市民＆宿泊者限定ポータル</div>
+    </div>
+    <div class="header-right" id="headerStatus" onclick="openCustomerAuthModal()">🔑 アプリ認証ログイン</div>
+  </div>
+</header>
+
+<main>
+  <!-- 1. トップ画面 -->
+  <section class="view active" id="view-initial">
+    <div class="top-split-layout">
+      <div class="top-left-desc">
+        <span class="feature-tag" style="margin-bottom:8px;">✨ 街レコ アプリ限定特典</span>
+        <h2 style="margin:8px 0 12px; font-size:22px; color:var(--ink);">和歌山の人気店を<br>条件検索＆事前予約！</h2>
+        <p style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin-bottom:20px;">
+          和歌山市民＆市内ホテル宿泊者様だけの特別ポータル。<b>席の優先予約</b>はもちろん、<b>提示するだけの店舗割引</b>や、各店自慢の限定商品の事前取り置きが可能です。
+        </p>
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px; font-size:12px; color:#166534;">
+          🎁 <b>ラーメン、割烹、パン屋、海鮮、焼肉など和歌山市内の実在人気店が勢ぞろい！</b>
+        </div>
+      </div>
+
+      <div class="top-right-auth">
+        <div class="center-box" style="margin-top:0;">
+          <div style="font-size:36px; margin-bottom:6px;">🔑</div>
+          <h3 style="margin:0 0 8px; font-size:18px;">お客様ログイン</h3>
+          <p style="font-size:12px; color:var(--ink-soft); margin-bottom:16px;">
+            市民ナンバー、または宿泊IDで簡単認証！
+          </p>
+          <button class="btn btn-primary btn-block" onclick="openCustomerAuthModal()">
+            <span style="font-size:18px;">🔑</span> アプリ認証をして利用開始
+          </button>
+        </div>
+
+        <div class="center-box" style="margin-top:0; border:2px dashed var(--teal); background:#f0fdf4;">
+          <h3 style="margin:0 0 8px; font-size:16px; color:var(--teal);">🏪 加盟店舗の方</h3>
+          <p style="font-size:12px; color:var(--ink-soft); margin-bottom:16px;">
+            予約管理、通常メニュー・割引設定、限定商品の登録ができます。
+          </p>
+          <button class="btn btn-teal btn-block" onclick="enterShopLogin()">
+            店舗管理画面ログイン / 新規加盟
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 店舗ログイン -->
+  <section class="view" id="view-shop-login">
+    <div class="center-box">
+      <h2>🔑 加盟店舗ログイン</h2>
+      <div style="max-width:320px; margin:20px auto 0;">
+        <div class="form-group">
+          <label>店舗を選択</label>
+          <select id="shopSelectDropdown"></select>
+        </div>
+        <div class="form-group">
+          <label>店舗管理用パスワード</label>
+          <input type="password" id="shopPasswordInput" placeholder="任意のパスワード">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="loginShop()">ログインして管理画面へ</button>
+      </div>
+    </div>
+
+    <div class="center-box" style="border: 2px dashed var(--teal); background: #f0fdf4;">
+      <h3 style="margin-top:0; font-size:16px; color:var(--teal);">✨ 新規掲載店舗の登録</h3>
+      <div style="max-width:360px; margin:0 auto;">
+        <div class="form-group">
+          <label>店舗名 <span style="color:red">*</span></label>
+          <input type="text" id="newShopName" placeholder="例: 紀州料理 ぶらくり">
+        </div>
+        <div class="search-row">
+          <div class="form-group">
+            <label>絵文字</label>
+            <input type="text" id="newShopIcon" maxlength="2" value="🍱">
+          </div>
+          <div class="form-group">
+            <label>ジャンル</label>
+            <select id="newShopGenre">
+              <option value="japanese">和食・割烹・居酒屋</option>
+              <option value="noodle">ラーメン・中華</option>
+              <option value="seafood">海鮮・寿司</option>
+              <option value="italian">洋食・イタリアン</option>
+              <option value="yakiniku">焼肉・肉料理</option>
+              <option value="bread">パン・カフェ</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-teal btn-block" onclick="registerNewShop()">🚀 店舗を登録する</button>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:20px;">
+      <button class="btn btn-outline btn-sm" onclick="switchView('view-initial')">← トップへ戻る</button>
+    </div>
+  </section>
+
+  <!-- 3. 店舗一覧画面（条件検索＆並び替え付き） -->
+  <section class="view" id="view-customer-feed">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div>
+        <h2 style="margin:0;">🏪 和歌山エリア掲載店舗一覧</h2>
+        <p style="margin:2px 0 0; font-size:12px; color:var(--ink-soft);">条件絞り込み＆並び替えでお目当てのお店を探せます</p>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="switchView('view-initial')">トップへ戻る</button>
+    </div>
+
+    <!-- 🔍 条件検索＆並び替え パネル -->
+    <div class="search-panel">
+      <div class="search-row">
+        <input type="text" id="searchKeyword" placeholder="🔍 店名・料理名で検索 (例: 井出, パン, 割烹)" oninput="renderCustomerFeed()">
+        <select id="searchFoodGenre" onchange="renderCustomerFeed()">
+          <option value="all">🍱 すべてのジャンル</option>
+          <option value="noodle">🍜 ラーメン・中華</option>
+          <option value="bread">🥐 パン・カフェ</option>
+          <option value="japanese">🍱 和食・割烹・居酒屋</option>
+          <option value="seafood">🐟 海鮮・刺身・寿司</option>
+          <option value="yakiniku">🥩 焼肉・肉料理</option>
+          <option value="italian">🍕 洋食・イタリアン</option>
+        </select>
+      </div>
+      <div class="search-row">
+        <select id="searchDistance" onchange="renderCustomerFeed()">
+          <option value="all">🚶‍♂️ 距離指定: すべて表示</option>
+          <option value="400">🚶‍♂️ 徒歩5分以内 (〜400m)</option>
+          <option value="800">🚶‍♂️ 徒歩10分以内 (〜800m)</option>
+          <option value="1200">🚶‍♂️ 徒歩15分以内 (〜1.2km)</option>
+        </select>
+        <select id="sortBy" onchange="renderCustomerFeed()">
+          <option value="recommended">⭐ 並び替え: おすすめ順</option>
+          <option value="distance">🚶‍♂️ 並び替え: 距離が近い順</option>
+          <option value="rating">🌟 並び替え: 評価が高い順</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="searchResultCount" style="font-size:12px; color:var(--ink-soft); font-weight:bold; margin-bottom:10px;"></div>
+
+    <div class="grid" id="customerFeedGrid"></div>
+  </section>
+
+  <!-- 4. 店舗ダッシュボード (店側) -->
+  <section class="view" id="view-shop-admin">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 id="shopAdminHeaderTitle" style="margin:0; font-size:18px;">店舗管理ダッシュボード</h2>
+      <button class="btn btn-outline btn-sm" onclick="switchView('view-initial')">トップへ戻る</button>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" onclick="switchAdminTab('reservation')">📨 来店・予約一覧</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('menu')">📖 通常メニュー管理</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('discount')">🏷️ 店頭割引・クーポン</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('slots')">📅 予約枠の管理</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('takeout')">🛒 限定取り置き商品</button>
+    </div>
+
+    <!-- タブ1: 予約一覧 -->
+    <div class="admin-panel active" id="admin-panel-reservation">
+      <div class="center-box" style="margin-top:0; text-align:left; padding:20px;">
+        <h3 style="margin-top:0; font-size:16px; border-bottom:2px solid var(--teal); padding-bottom:6px;">📋 受信した予約一覧 (席予約 ＆ 取り置き)</h3>
+        <div id="adminOrdersList"></div>
+      </div>
+    </div>
+
+    <!-- タブ2: 通常メニュー管理 -->
+    <div class="admin-panel" id="admin-panel-menu">
+      <div class="center-box" style="margin-top:0; text-align:left; padding:20px; margin-bottom:20px;">
+        <h3 style="margin-top:0; font-size:16px;">➕ 新規メニュー追加</h3>
+        <div class="search-row">
+          <div class="form-group">
+            <label>メニュー名 <span style="color:red">*</span></label>
+            <input type="text" id="menuName" placeholder="例: 特製中華そば">
+          </div>
+          <div class="form-group">
+            <label>価格 (税込円) <span style="color:red">*</span></label>
+            <input type="number" id="menuPrice" placeholder="例: 850">
+          </div>
+        </div>
+        <div class="search-row">
+          <div class="form-group">
+            <label>カテゴリ</label>
+            <select id="menuCategory">
+              <option value="フード">🍔 フード</option>
+              <option value="ドリンク">☕️ ドリンク</option>
+              <option value="コース">🍱 コース・セット</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>画像URL (任意)</label>
+            <input type="text" id="menuImage" placeholder="https://...">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>説明</label>
+          <input type="text" id="menuDesc" placeholder="例: 自慢のスープと自家製麺。">
+        </div>
+        <button class="btn btn-teal" onclick="addShopMenu()">✨ メニューを追加</button>
+      </div>
+
+      <div class="center-box" style="margin-top:0; text-align:left; padding:20px;">
+        <h3 style="margin-top:0; font-size:16px;">📖 登録済みメニュー</h3>
+        <div id="adminMenuList"></div>
+      </div>
+    </div>
+
+    <!-- タブ3: 割引・クーポン -->
+    <div class="admin-panel" id="admin-panel-discount">
+      <div class="center-box" style="margin-top:0; text-align:left; padding:20px; margin-bottom:20px;">
+        <h3 style="margin-top:0; font-size:16px; color:var(--teal);">💳 実店舗提示での「常時特典」</h3>
+        <div class="form-group">
+          <label>特典内容の説明</label>
+          <input type="text" id="shopAlwaysDiscount" placeholder="例: アプリ提示で煮卵1個サービス">
+        </div>
+        <button class="btn btn-teal btn-sm" onclick="saveAlwaysDiscount()">常時特典を保存</button>
+      </div>
+
+      <div class="center-box" style="margin-top:0; text-align:left; padding:20px;">
+        <h3 style="margin-top:0; font-size:16px; color:var(--orange);">🎫 期間限定クーポンの発行</h3>
+        <div class="form-group">
+          <label>タイトル</label>
+          <input type="text" id="couponTitle" placeholder="例: 雨の日限定！100円引き">
+        </div>
+        <div class="form-group">
+          <label>詳細</label>
+          <input type="text" id="couponDetail" placeholder="例: ラーメンご注文の方限定">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addShopCoupon()">🎟️ クーポンを発行</button>
+        <div id="adminCouponList" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- タブ4: 枠管理 -->
+    <div class="admin-panel" id="admin-panel-slots">
+      <div class="center-box" style="margin-top:0; text-align:left; padding:20px;">
+        <h3 style="margin-top:0; font-size:16px;">📅 日付別・受付管理</h3>
+        <div class="form-group" style="max-width:240px;">
+          <label>日付を選択</label>
+          <input type="date" id="adminSlotDate" onchange="renderSlotManager()">
+        </div>
+        <div id="slotManagerList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+    </div>
+
+    <!-- タブ5: 取り置き限定商品 -->
+    <div class="admin-panel" id="admin-panel-takeout">
+      <div class="center-box" style="margin-top:0; text-align:left; padding:20px; margin-bottom:20px;">
+        <h3 style="margin-top:0; font-size:16px;">➕ 事前取り置き専用商品の登録</h3>
+        <div class="form-group">
+          <label>商品名</label>
+          <input type="text" id="postName" placeholder="例: 【数量限定】お持ち帰りラーメンセット">
+        </div>
+        <div class="form-group">
+          <label>説明</label>
+          <textarea id="postContent" rows="2" placeholder="売り切れ防止の事前確保ができます"></textarea>
+        </div>
+        <button class="btn btn-primary" style="margin-top:10px;" onclick="submitPost()">登録する 🚀</button>
+      </div>
+      <div id="shopPostsGrid" class="grid"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 客用 認証モーダル -->
+<div class="modal-overlay" id="customerAuthModal">
+  <div class="modal-content" style="max-width:420px;">
+    <h3 style="margin-top:0; font-size:18px;">🔑 アプリ限定アクセス認証</h3>
+    <p style="font-size:12px; color:var(--ink-soft);">
+      市民ナンバーまたは宿泊IDを入力してください。
+    </p>
+    <div style="background:#fff7ed; border:1px solid #ffedd5; padding:8px 12px; border-radius:8px; font-size:11px; color:#9a3412; margin-bottom:12px;">
+      💡 <b>テスト用ID:</b> 市民: <code>W12345</code> / 宿泊者: <code>HOTEL2026</code>
+    </div>
+    <div class="form-group">
+      <label>市民ナンバー または 宿泊ID</label>
+      <input type="text" id="authNumberInput" placeholder="例: W12345">
+    </div>
+    <div class="form-group">
+      <label>パスワード</label>
+      <input type="password" id="authPasswordInput" placeholder="パスワード">
+    </div>
+    <div class="form-group">
+      <label>お名前</label>
+      <input type="text" id="authNameInput" placeholder="例: 和歌山 太郎">
+    </div>
+    <button class="btn btn-teal btn-block" onclick="submitCustomerAuth()">認証して利用開始 🚀</button>
+    <button class="btn btn-outline btn-block btn-sm" style="margin-top:8px;" onclick="closeCustomerAuthModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- 客用 店舗詳細（モーダル） -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-content" id="detailModalContent"></div>
+</div>
+
+<script>
+// --- 正しく紐付け直した和歌山の実在店舗データ ＆ 限定取り置き商品 ---
+function getShops() {
+  // バージョンキーを更新してデータを完全クリーン化
+  const raw = localStorage.getItem("machireco_shops_v14_fixed");
+  if(raw) return JSON.parse(raw);
+
+  const initialShops = {
+    "shop1": { 
+      id: "shop1", name: "井出商店 (和歌山ラーメン)", icon: "🍜", genre: "noodle", distanceMeter: 350, rating: 4.8, 
+      img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&auto=format&fit=crop", 
+      openHour: 11, closeHour: 23, hoursText: "11:00〜23:00 (木曜定休)", closedSlotsByDate:{},
+      alwaysDiscount: "【アプリ提示】早すしまたはトッピング1個サービス！",
+      coupons: [{ id: "c1", title: "お会計から100円引き", detail: "中華そばご注文の方限定" }],
+      menus: [
+        { id: "m1", name: "中華そば", price: 800, category: "フード", desc: "濃厚な豚骨醤油スープが自慢の和歌山ラーメンの代名詞。" },
+        { id: "m2", name: "特製中華そば (チャーシュー増し)", price: 1000, category: "フード", desc: "トロトロの特製チャーシューがたっぷり。" }
+      ]
+    },
+    "shop3": { 
+      id: "shop3", name: "城下町パン工房 Bakery", icon: "🥐", genre: "bread", distanceMeter: 120, rating: 4.9, 
+      img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop", 
+      openHour: 8, closeHour: 18, hoursText: "08:00〜18:00 (月・火定休)", closedSlotsByDate:{},
+      alwaysDiscount: "【アプリ提示】500円以上お買い上げで10%OFF",
+      coupons: [],
+      menus: [
+        { id: "m5", name: "有田みかんデニッシュ", price: 280, category: "フード", desc: "地元産みかんの甘酸っぱさとサクサク生地。" },
+        { id: "m5_2", name: "紀州梅仕立てのカレーパン", price: 250, category: "フード", desc: "隠し味の梅肉が爽やかな自家製カレーパン。" }
+      ]
+    },
+    "shop2": { 
+      id: "shop2", name: "紀州料理 ぶらくり割烹", icon: "🍱", genre: "japanese", distanceMeter: 200, rating: 4.7, 
+      img: "https://images.unsplash.com/photo-1534482492329-37299c3046f4?w=600&auto=format&fit=crop", 
+      openHour: 17, closeHour: 22, hoursText: "17:00〜22:00 (日曜定休)", closedSlotsByDate:{},
+      alwaysDiscount: "【アプリ提示】夜のコースご利用で5%OFF",
+      coupons: [],
+      menus: [
+        { id: "m3", name: "クエ鍋コース (1人前)", price: 6800, category: "コース", desc: "和歌山近海で獲れた高級魚クエを堪能。" },
+        { id: "m4", name: "勝浦産 生マグロ造り盛り", price: 1500, category: "フード", desc: "もちもちの食感と濃厚な旨味。" }
+      ]
+    },
+    "shop4": { 
+      id: "shop4", name: "海鮮酒場 和歌山港直送", icon: "🐟", genre: "seafood", distanceMeter: 450, rating: 4.6, 
+      img: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&auto=format&fit=crop", 
+      openHour: 16, closeHour: 23, hoursText: "16:00〜23:00 (年中無休)", closedSlotsByDate:{},
+      alwaysDiscount: "【アプリ提示】ワンドリンク無料！",
+      coupons: [],
+      menus: [
+        { id: "m6", name: "紀州備長炭 魚串盛り合わせ", price: 1200, category: "フード", desc: "香ばしく焼き上げた新鮮な地魚。" }
+      ]
+    },
+    "shop5": {
+      id: "shop5", name: "紀州熊野牛 焼肉 ぶらくり亭", icon: "🥩", genre: "yakiniku", distanceMeter: 600, rating: 4.9,
+      img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop",
+      openHour: 17, closeHour: 23, hoursText: "17:00〜23:00 (水曜定休)", closedSlotsByDate:{},
+      alwaysDiscount: "【アプリ提示】特選カルビ1皿半額！",
+      coupons: [{ id: "c5", title: "ワンドリンクサービス", detail: "ディナー予約の方限定" }],
+      menus: [
+        { id: "m7", name: "熊野牛 特選極上ロース", price: 2200, category: "フード", desc: "とろける脂と芳醇な肉香。" }
+      ]
+    },
+    "shop6": {
+      id: "shop6", name: "和歌山城下町 Trattoria", icon: "🍕", genre: "italian", distanceMeter: 750, rating: 4.5,
+      img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop",
+      openHour: 11, closeHour: 22, hoursText: "11:30〜22:00 (火曜定休)", closedSlotsByDate:{},
+      alwaysDiscount: "【アプリ提示】食後の自家製ドルチェサービス！",
+      coupons: [],
+      menus: [
+        { id: "m8", name: "紀州しらすと青唐辛子のピッツァ", price: 1600, category: "フード", desc: "ふっくら仕立てた極上ピッツァ。" }
+      ]
+    }
+  };
+  localStorage.setItem("machireco_shops_v14_fixed", JSON.stringify(initialShops));
+  
+  // 取り置き投稿データの初期化（店舗IDと完全に一致）
+  const initialPosts = [
+    { id: 101, shopId: "shop1", name: "【お土産】持ち帰り井出商店ラーメンセット (3食分)", content: "自宅でも名店の味を！スープ・麺・具材付き。", limit: 5, image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&auto=format&fit=crop" },
+    { id: 102, shopId: "shop3", name: "【夕方お渡し限定】焼きたて人気パンおすすめ5種BOX", content: "人気のデニッシュや角食パンの限定お得セット！", limit: 3, image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop" },
+    { id: 103, shopId: "shop2", name: "【数量限定】紀州南高梅の特製折詰弁当", content: "板前が丹精込めて作る特製のお持ち帰り折詰。", limit: 2, image: "https://images.unsplash.com/photo-1534482492329-37299c3046f4?w=600&auto=format&fit=crop" }
+  ];
+  localStorage.setItem("machireco_posts_v17_fixed", JSON.stringify(initialPosts));
+
+  return initialShops;
+}
+
+function saveShops(shops) { localStorage.setItem("machireco_shops_v14_fixed", JSON.stringify(shops)); }
+
+function getPosts() {
+  const raw = localStorage.getItem("machireco_posts_v17_fixed");
+  return raw ? JSON.parse(raw) : [];
+}
+function savePosts(posts) { localStorage.setItem("machireco_posts_v17_fixed", JSON.stringify(posts)); }
+
+function getCustomerAuth() {
+  const raw = localStorage.getItem("machireco_auth_v1");
+  return raw ? JSON.parse(raw) : null;
+}
+function saveCustomerAuth(authData) {
+  localStorage.setItem("machireco_auth_v1", JSON.stringify(authData));
+  updateHeaderCustomerStatus();
+}
+
+const STANDARD_TIME_SLOTS = ["11:00","12:00","13:00","14:00","17:00","18:00","19:00","20:00","21:00"];
+function slotStartHour(slot) { return parseInt(slot.split(':')[0]); }
+
+let currentShop = null;
+
+function getOrders() {
+  const raw = localStorage.getItem("machireco_orders_v10");
+  return raw ? JSON.parse(raw) : [];
+}
+function saveOrders(orders) { localStorage.setItem("machireco_orders_v10", JSON.stringify(orders)); }
+
+function switchView(viewId) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+}
+function resetApp() { currentShop = null; updateHeaderCustomerStatus(); switchView('view-initial'); }
+
+function updateHeaderCustomerStatus() {
+  const auth = getCustomerAuth();
+  const el = document.getElementById('headerStatus');
+  if (currentShop) {
+    el.innerHTML = `📍 店舗: ${currentShop.icon} ${currentShop.name}`;
+  } else if (auth) {
+    el.innerHTML = auth.type === 'citizen' ? `🏠 市民: ${auth.name} 様` : `🏨 宿泊パス: ${auth.name} 様`;
+  } else {
+    el.innerHTML = `🔑 アプリ認証ログイン`;
+  }
+}
+
+function openCustomerAuthModal() { document.getElementById('customerAuthModal').classList.add('active'); }
+function closeCustomerAuthModal() { document.getElementById('customerAuthModal').classList.remove('active'); }
+
+function submitCustomerAuth() {
+  const num = document.getElementById('authNumberInput').value.trim();
+  const pass = document.getElementById('authPasswordInput').value.trim();
+  const name = document.getElementById('authNameInput').value.trim();
+
+  if (!num || !pass || !name) return alert("すべての項目を入力してください。");
+
+  const isHotel = num.toUpperCase().includes("HOTEL") || num.toUpperCase().startsWith("H");
+  const authData = { type: isHotel ? "visitor" : "citizen", idNumber: num, name: name };
+
+  saveCustomerAuth(authData);
+  closeCustomerAuthModal();
+  enterCustomerFeed();
+}
+
+function enterCustomerFeed() {
+  const auth = getCustomerAuth();
+  if (!auth) return openCustomerAuthModal();
+  updateHeaderCustomerStatus();
+  switchView('view-customer-feed');
+  renderCustomerFeed();
+}
+
+/* 一覧画面 (検索・フィルター・ソート) */
+function renderCustomerFeed() {
+  const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+  const genre = document.getElementById('searchFoodGenre').value;
+  const maxDistance = document.getElementById('searchDistance').value;
+  const sortBy = document.getElementById('sortBy').value;
+
+  const shopsObj = getShops();
+  let shopList = Object.values(shopsObj);
+
+  if (keyword) {
+    shopList = shopList.filter(s => s.name.toLowerCase().includes(keyword));
+  }
+  if (genre !== 'all') {
+    shopList = shopList.filter(s => s.genre === genre);
+  }
+  if (maxDistance !== 'all') {
+    const maxM = parseInt(maxDistance);
+    shopList = shopList.filter(s => (s.distanceMeter || 0) <= maxM);
+  }
+
+  if (sortBy === 'distance') {
+    shopList.sort((a, b) => (a.distanceMeter || 0) - (b.distanceMeter || 0));
+  } else if (sortBy === 'rating') {
+    shopList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }
+
+  document.getElementById('searchResultCount').innerText = `該当店舗: ${shopList.length}件`;
+
+  const grid = document.getElementById('customerFeedGrid');
+  if (shopList.length === 0) {
+    grid.innerHTML = `<div style="text-align:center; padding:40px; color:var(--ink-soft); grid-column: 1 / -1;">条件に合う店舗が見つかりませんでした。<br>検索条件を変更してください。</div>`;
+    return;
+  }
+
+  grid.innerHTML = shopList.map(shop => {
+    return `
+      <div class="card" onclick="openShopModal('${shop.id}')">
+        <img class="card-img" src="${shop.img}">
+        <div class="card-content">
+          <div class="card-header">
+            <div class="shop-info">
+              <div class="shop-icon">${shop.icon}</div>
+              <div>
+                <div class="shop-name">${shop.name}</div>
+                <div class="meta-badges">
+                  <span class="distance-badge">🚶‍♂️ 徒歩${Math.ceil((shop.distanceMeter || 300) / 80)}分 (${shop.distanceMeter || 300}m)</span>
+                  <span class="rating-badge">⭐️ ${shop.rating || 4.5}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="font-size:12px; color:var(--ink-soft); margin-top:6px;">
+            🕒 営業: ${shop.hoursText || '11:00〜22:00'}
+          </div>
+
+          ${shop.alwaysDiscount ? `<div style="background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:6px 10px; border-radius:8px; font-size:12px; font-weight:bold; margin-top:8px;">💳 ${shop.alwaysDiscount}</div>` : ''}
+
+          <div style="font-size:12px; color:var(--orange); font-weight:bold; text-align:right; margin-top:10px;">
+            📅 席予約 / 💳 クーポン / 📖 通常メニューを見る →
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* 店舗モーダル（3タブ） */
+let activeModalTab = 'reserve';
+let tempSelectedTakeouts = {};
+
+function openShopModal(shopId) {
+  const shop = getShops()[shopId];
+  if (!shop) return;
+  activeModalTab = 'reserve';
+  tempSelectedTakeouts = {};
+  renderShopModalContent(shopId);
+  document.getElementById('detailModal').classList.add('active');
+}
+
+function renderShopModalContent(shopId) {
+  const shop = getShops()[shopId];
+  const auth = getCustomerAuth();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  let tabContentHTML = "";
+
+  if (activeModalTab === 'reserve') {
+    const allPosts = getPosts().filter(p => p.shopId === shopId);
+    let takeoutSelectHTML = allPosts.length > 0 ? allPosts.map(post => `
+      <div class="modal-item-card">
+        <img src="${post.image}" class="modal-item-img">
+        <div style="flex:1;">
+          <div style="font-weight:bold; font-size:13px;">${post.name}</div>
+          <div style="font-size:11px; color:var(--ink-soft);">${post.content}</div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <label style="font-size:12px; font-weight:bold;">数量:</label>
+            <input type="number" id="post_qty_${post.id}" value="${tempSelectedTakeouts[post.id] || 0}" min="0" max="5" style="width:60px; padding:4px;" onchange="updateTempTakeout(${post.id}, this.value)">
+          </div>
+        </div>
+      </div>
+    `).join('') : '<p style="font-size:12px; color:var(--ink-soft);">現在、事前取り置き限定商品はありません（席・来店予約のみ行えます）。</p>';
+
+    tabContentHTML = `
+      <div style="background:var(--bg); padding:16px; border-radius:12px; border:1px solid var(--border);">
+        <h4 style="margin:0 0 12px; font-size:15px; color:var(--teal);">1️⃣ ご来店日時・人数の選択</h4>
+        <div class="search-row">
+          <div class="form-group">
+            <label>📅 ご来店希望日</label>
+            <input type="date" id="modalReserveDate" value="${todayStr}" min="${todayStr}" onchange="updateModalSlotOptions('${shop.id}')">
+          </div>
+          <div class="form-group">
+            <label>⏰ 来店時間</label>
+            <select id="modalReserveSlot"></select>
+          </div>
+          <div class="form-group">
+            <label>👥 人数</label>
+            <select id="modalReservePeople">
+              <option value="1名">1名</option>
+              <option value="2名" selected>2名</option>
+              <option value="3〜4名">3〜4名</option>
+              <option value="5名以上">5名以上</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; background:#fff; padding:16px; border-radius:12px; border:1px solid var(--border);">
+        <h4 style="margin:0 0 6px; font-size:15px; color:var(--orange);">2️⃣ 限定メニューの事前取り置き（任意）</h4>
+        <p style="font-size:11px; color:var(--ink-soft); margin-bottom:12px;">ご来店時に確実に購入したい場合、数量を選択してください。不要な場合は0のまま進めます。</p>
+        ${takeoutSelectHTML}
+      </div>
+
+      <div class="warning-box">
+        ⚠️ <b>無断キャンセルに関するご注意</b><br>
+        無断キャンセルが発生した場合、本アプリのご利用が停止となる場合がございます。変更・キャンセルの際はお早めにお店へご連絡ください。
+      </div>
+
+      <button class="btn btn-primary btn-block" style="margin-top:16px; font-size:16px;" onclick="submitFinalReservation('${shop.id}')">
+        🚀 この内容で予約を確定する
+      </button>
+    `;
+
+  } else if (activeModalTab === 'discount') {
+    let couponsHTML = (shop.coupons && shop.coupons.length > 0) ? shop.coupons.map(c => `
+      <div style="border:2px dashed var(--orange); background:#fff7ed; padding:12px; border-radius:12px; margin-bottom:10px;">
+        <div style="font-weight:bold; color:var(--orange); font-size:14px;">🎟️ ${c.title}</div>
+        <div style="font-size:11px; color:var(--ink-soft); margin:4px 0;">${c.detail}</div>
+        <button class="btn btn-primary btn-sm" onclick="alert('会計時にこの画面を店員に見せてください！')">会計時に提示して使う</button>
+      </div>
+    `).join('') : '<p style="font-size:12px; color:var(--ink-soft);">現在発行中の期間限定クーポンはありません。</p>';
+
+    tabContentHTML = `
+      <div class="digital-card">
+        <div style="font-size:11px; text-transform:uppercase; opacity:0.8;">街レコ 会員限定優待パス</div>
+        <div style="font-size:18px; font-weight:bold; margin:6px 0;">${auth.name} 様</div>
+        <div style="font-size:12px; background:rgba(255,255,255,0.2); display:inline-block; padding:2px 10px; border-radius:99px;">
+          ${auth.type === 'citizen' ? '🏠 和歌山市民 会員' : '🏨 宿泊者 会員'}
+        </div>
+        <div class="barcode-box">
+          <div class="fake-barcode"></div>
+          <div style="color:#000; font-size:10px; font-weight:bold; margin-top:2px;">ID: ${auth.idNumber}</div>
+        </div>
+        <div style="font-size:12px; color:#fde047; font-weight:bold;">
+          ${shop.alwaysDiscount || "会計時にこの画面を提示してください"}
+        </div>
+      </div>
+
+      <h4 style="margin:16px 0 8px; font-size:14px;">🎟️ 使える期間限定クーポン</h4>
+      ${couponsHTML}
+    `;
+
+  } else if (activeModalTab === 'menu') {
+    const menus = shop.menus || [];
+    tabContentHTML = menus.length > 0 ? menus.map(m => `
+      <div class="modal-item-card">
+        ${m.img ? `<img src="${m.img}" class="modal-item-img">` : '<div class="modal-item-img" style="background:#eee; display:flex; align-items:center; justify-content:center; font-size:24px;">🍱</div>'}
+        <div style="flex:1;">
+          <div style="font-weight:bold; font-size:14px;">${m.name}</div>
+          <div style="font-size:11px; color:var(--ink-soft); margin:2px 0;">${m.desc || ''}</div>
+          <div style="font-weight:bold; color:var(--teal); font-size:14px;">¥${m.price.toLocaleString()} (税込)</div>
+        </div>
+      </div>
+    `).join('') : '<p style="font-size:12px; color:var(--ink-soft);">登録されているメニューはありません。</p>';
+  }
+
+  const html = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="margin:0; font-size:18px;">${shop.icon} ${shop.name}</h3>
+      <button class="btn btn-outline btn-sm" onclick="closeDetailModal()">✕ 閉じる</button>
+    </div>
+
+    <div class="shop-modal-tabs">
+      <div class="shop-modal-tab ${activeModalTab==='reserve'?'active':''}" onclick="switchModalTab('${shopId}','reserve')">📅 席予約・取り置き</div>
+      <div class="shop-modal-tab ${activeModalTab==='discount'?'active':''}" onclick="switchModalTab('${shopId}','discount')">💳 クーポン/会員証</div>
+      <div class="shop-modal-tab ${activeModalTab==='menu'?'active':''}" onclick="switchModalTab('${shopId}','menu')">📖 全メニュー</div>
+    </div>
+
+    ${tabContentHTML}
+  `;
+
+  document.getElementById('detailModalContent').innerHTML = html;
+  if (activeModalTab === 'reserve') updateModalSlotOptions(shopId);
+}
+
+function updateTempTakeout(postId, qty) {
+  tempSelectedTakeouts[postId] = parseInt(qty || 0);
+}
+
+function switchModalTab(shopId, tab) {
+  activeModalTab = tab;
+  renderShopModalContent(shopId);
+}
+
+function updateModalSlotOptions(shopId) {
+  const shop = getShops()[shopId];
+  const selectedDate = document.getElementById('modalReserveDate').value;
+  const selectEl = document.getElementById('modalReserveSlot');
+  if(!selectEl) return;
+
+  const closedSlots = (shop.closedSlotsByDate && shop.closedSlotsByDate[selectedDate]) || [];
+  const validSlots = STANDARD_TIME_SLOTS.filter(s => {
+    const h = slotStartHour(s);
+    return h >= shop.openHour && h < shop.closeHour && !closedSlots.includes(s);
+  });
+
+  if (validSlots.length === 0) {
+    selectEl.innerHTML = `<option value="">🚫 受付停止中</option>`;
+  } else {
+    selectEl.innerHTML = validSlots.map(s => `<option value="${s}">${s}</option>`).join('');
+  }
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModal').classList.remove('active');
+}
+
+function submitFinalReservation(shopId) {
+  const auth = getCustomerAuth();
+  const date = document.getElementById('modalReserveDate').value;
+  const slot = document.getElementById('modalReserveSlot').value;
+  const people = document.getElementById('modalReservePeople').value;
+
+  if (!date || !slot || slot.includes("停止中")) return alert("ご希望のご来店日時を選択してください。");
+
+  const allPosts = getPosts().filter(p => p.shopId === shopId);
+  let takeoutItems = [];
+  allPosts.forEach(post => {
+    const q = tempSelectedTakeouts[post.id] || 0;
+    if (q > 0) {
+      takeoutItems.push(`${post.name} × ${q}`);
+    }
+  });
+
+  const newOrder = {
+    id: "RES-" + Math.floor(Math.random() * 8999 + 1000),
+    shopId: shopId,
+    customerName: auth.name,
+    userType: auth.type === "citizen" ? "市民" : "宿泊者",
+    date: date,
+    slot: slot,
+    people: people,
+    takeouts: takeoutItems,
+    time: new Date().toLocaleTimeString()
+  };
+
+  const orders = getOrders();
+  orders.push(newOrder);
+  saveOrders(orders);
+
+  let msg = `✨ 予約が完了しました！\n\n日時: ${date} ${slot}\n人数: ${people}`;
+  if (takeoutItems.length > 0) {
+    msg += `\n取り置き商品:\n・` + takeoutItems.join('\n・');
+  } else {
+    msg += `\n取り置き: なし (席予約のみ)`;
+  }
+  alert(msg);
+  closeDetailModal();
+}
+
+/* --- 店舗管理画面 --- */
+function populateShopDropdown() {
+  const dropdown = document.getElementById('shopSelectDropdown');
+  dropdown.innerHTML = "";
+  const shops = getShops();
+  for (let key in shops) {
+    const s = shops[key];
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.icon} ${s.name}`;
+    dropdown.appendChild(opt);
+  }
+}
+function enterShopLogin() { populateShopDropdown(); switchView('view-shop-login'); }
+
+function loginShop() {
+  const shopId = document.getElementById('shopSelectDropdown').value;
+  const pass = document.getElementById('shopPasswordInput').value.trim();
+  if (!pass) return alert("パスワードを入力してください。");
+
+  const shops = getShops();
+  if (shops[shopId]) {
+    currentShop = shops[shopId];
+    openShopAdminDashboard();
+  }
+}
+
+function registerNewShop() {
+  const name = document.getElementById('newShopName').value.trim();
+  const icon = document.getElementById('newShopIcon').value.trim() || "🏪";
+  const genre = document.getElementById('newShopGenre').value;
+  if (!name) return alert("店舗名を入力してください！");
+
+  const newId = "shop_" + Date.now();
+  const newShopObj = { 
+    id: newId, name: name, icon: icon, genre: genre, distanceMeter: 300, rating: 5.0, 
+    img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&auto=format&fit=crop", 
+    openHour: 10, closeHour: 22, hoursText: "10:00〜22:00", closedSlotsByDate: {}, alwaysDiscount: "【アプリ提示】全品5%OFF", coupons: [], menus: [] 
+  };
+
+  const shops = getShops();
+  shops[newId] = newShopObj;
+  saveShops(shops);
+
+  currentShop = newShopObj;
+  openShopAdminDashboard();
+}
+
+function openShopAdminDashboard() {
+  updateHeaderCustomerStatus();
+  document.getElementById('shopAdminHeaderTitle').innerText = `${currentShop.icon} ${currentShop.name} 管理画面`;
+  document.getElementById('shopAlwaysDiscount').value = currentShop.alwaysDiscount || "";
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('adminSlotDate').value = todayStr;
+
+  switchView('view-shop-admin');
+  switchAdminTab('reservation');
+}
+
+function switchAdminTab(tabName) {
+  document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.admin-panel').forEach(panel => panel.classList.remove('active'));
+
+  const tabs = ['reservation', 'menu', 'discount', 'slots', 'takeout'];
+  const idx = tabs.indexOf(tabName);
+  document.querySelectorAll('.admin-tab-btn')[idx].classList.add('active');
+  document.getElementById(`admin-panel-${tabName}`).classList.add('active');
+
+  if(tabName === 'reservation') renderAdminOrders();
+  if(tabName === 'menu') renderAdminMenuList();
+  if(tabName === 'discount') renderAdminCouponList();
+  if(tabName === 'slots') renderSlotManager();
+  if(tabName === 'takeout') renderShopAdminPosts();
+}
+
+function renderAdminOrders() {
+  const myOrders = getOrders().filter(o => o.shopId === currentShop.id);
+  const container = document.getElementById('adminOrdersList');
+  if (myOrders.length === 0) {
+    container.innerHTML = `<p style="color:var(--ink-soft); font-size:13px;">現在、新しい予約・取り置き申込みはありません。</p>`;
+    return;
+  }
+  container.innerHTML = myOrders.reverse().map(o => `
+    <div class="order-item">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <b>📅 来店予約: ${o.date} ${o.slot} (${o.people})</b>
+          <div style="font-size:12px; color:var(--teal); font-weight:bold; margin-top:2px;">
+            👤 ${o.customerName} 様 (${o.userType})
+          </div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="completeOrder('${o.id}')">ご来店・完了</button>
+      </div>
+      
+      ${o.takeouts && o.takeouts.length > 0 ? `
+        <div style="background:#fff; border:1px solid var(--border); padding:8px; border-radius:6px; margin-top:8px; font-size:12px;">
+          <b>🛒 まとめて取り置き注文:</b>
+          <ul style="margin:4px 0 0; padding-left:20px;">
+            ${o.takeouts.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
+      ` : `<div style="font-size:11px; color:var(--ink-soft); margin-top:6px;">🛒 取り置き注文なし (席予約のみ)</div>`}
+    </div>
+  `).join('');
+}
+
+function completeOrder(orderId) {
+  let orders = getOrders().filter(o => o.id !== orderId);
+  saveOrders(orders);
+  renderAdminOrders();
+}
+
+function addShopMenu() {
+  const name = document.getElementById('menuName').value.trim();
+  const price = parseInt(document.getElementById('menuPrice').value);
+  const category = document.getElementById('menuCategory').value;
+  const desc = document.getElementById('menuDesc').value.trim();
+  const img = document.getElementById('menuImage').value.trim();
+
+  if(!name || isNaN(price)) return alert("メニュー名と価格を入力してください。");
+
+  let shops = getShops();
+  let shop = shops[currentShop.id];
+  if(!shop.menus) shop.menus = [];
+
+  shop.menus.push({ id: "m_" + Date.now(), name: name, price: price, category: category, desc: desc, img: img });
+  saveShops(shops);
+  currentShop = shop;
+
+  document.getElementById('menuName').value = "";
+  document.getElementById('menuPrice').value = "";
+  document.getElementById('menuDesc').value = "";
+  renderAdminMenuList();
+  alert("✨ メニューを追加しました！");
+}
+
+function deleteShopMenu(menuId) {
+  if(!confirm("このメニューを削除しますか？")) return;
+  let shops = getShops();
+  let shop = shops[currentShop.id];
+  shop.menus = shop.menus.filter(m => m.id !== menuId);
+  saveShops(shops);
+  currentShop = shop;
+  renderAdminMenuList();
+}
+
+function renderAdminMenuList() {
+  const container = document.getElementById('adminMenuList');
+  const menus = currentShop.menus || [];
+  if(menus.length === 0) {
+    container.innerHTML = `<p style="font-size:12px; color:var(--ink-soft);">登録されているメニューはありません。</p>`;
+    return;
+  }
+  container.innerHTML = menus.map(m => `
+    <div class="modal-item-card">
+      <div style="flex:1;">
+        <span class="feature-tag">${m.category}</span>
+        <span style="font-weight:bold; font-size:14px;">${m.name}</span>
+        <div style="font-size:12px; color:var(--teal); font-weight:bold;">¥${m.price.toLocaleString()}</div>
+        <div style="font-size:11px; color:var(--ink-soft);">${m.desc || ''}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteShopMenu('${m.id}')">削除</button>
+    </div>
+  `).join('');
+}
+
+function saveAlwaysDiscount() {
+  const text = document.getElementById('shopAlwaysDiscount').value.trim();
+  let shops = getShops();
+  shops[currentShop.id].alwaysDiscount = text;
+  saveShops(shops);
+  currentShop = shops[currentShop.id];
+  alert("💳 常時特典を更新しました。");
+}
+
+function addShopCoupon() {
+  const title = document.getElementById('couponTitle').value.trim();
+  const detail = document.getElementById('couponDetail').value.trim();
+  if(!title) return alert("タイトルを入力してください。");
+
+  let shops = getShops();
+  let shop = shops[currentShop.id];
+  if(!shop.coupons) shop.coupons = [];
+
+  shop.coupons.push({ id: "c_" + Date.now(), title: title, detail: detail });
+  saveShops(shops);
+  currentShop = shop;
+
+  document.getElementById('couponTitle').value = "";
+  document.getElementById('couponDetail').value = "";
+  renderAdminCouponList();
+  alert("🎟️ クーポンを発行しました！");
+}
+
+function deleteShopCoupon(couponId) {
+  let shops = getShops();
+  let shop = shops[currentShop.id];
+  shop.coupons = shop.coupons.filter(c => c.id !== couponId);
+  saveShops(shops);
+  currentShop = shop;
+  renderAdminCouponList();
+}
+
+function renderAdminCouponList() {
+  const container = document.getElementById('adminCouponList');
+  const coupons = currentShop.coupons || [];
+  if(coupons.length === 0) {
+    container.innerHTML = `<p style="font-size:12px; color:var(--ink-soft);">発行中のクーポンはありません。</p>`;
+    return;
+  }
+  container.innerHTML = coupons.map(c => `
+    <div style="border:1px solid var(--border); padding:10px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-weight:bold; font-size:13px; color:var(--orange);">${c.title}</div>
+        <div style="font-size:11px; color:var(--ink-soft);">${c.detail}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteShopCoupon('${c.id}')">削除</button>
+    </div>
+  `).join('');
+}
+
+function renderSlotManager() {
+  const targetDate = document.getElementById('adminSlotDate').value;
+  if (!targetDate) return;
+
+  const listEl = document.getElementById('slotManagerList');
+  const slots = STANDARD_TIME_SLOTS.filter(s => {
+    const h = slotStartHour(s);
+    return h >= currentShop.openHour && h < currentShop.closeHour;
+  });
+
+  const closedForDate = (currentShop.closedSlotsByDate && currentShop.closedSlotsByDate[targetDate]) || [];
+
+  listEl.innerHTML = slots.map(s => {
+    const isClosed = closedForDate.includes(s);
+    return `
+      <button type="button" class="btn btn-sm ${isClosed ? 'btn-outline' : 'btn-teal'}" 
+              style="${isClosed ? 'color:#dc2626; background:#fef2f2;' : ''}" 
+              onclick="toggleSlotClosedForDate('${targetDate}', '${s}')">
+        ${s} ${isClosed ? '🚫 停止中' : '✅ 予約OK'}
+      </button>
+    `;
+  }).join('');
+}
+
+function toggleSlotClosedForDate(dateStr, slot) {
+  let shops = getShops();
+  let shopObj = shops[currentShop.id];
+  if (!shopObj.closedSlotsByDate) shopObj.closedSlotsByDate = {};
+  if (!shopObj.closedSlotsByDate[dateStr]) shopObj.closedSlotsByDate[dateStr] = [];
+
+  let arr = shopObj.closedSlotsByDate[dateStr];
+  if (arr.includes(slot)) {
+    arr = arr.filter(x => x !== slot);
+  } else {
+    arr.push(slot);
+  }
+
+  shopObj.closedSlotsByDate[dateStr] = arr;
+  saveShops(shops);
+  currentShop = shopObj;
+  renderSlotManager();
+}
+
+function renderShopAdminPosts() {
+  const myPosts = getPosts().filter(p => p.shopId === currentShop.id);
+  document.getElementById('shopPostsGrid').innerHTML = myPosts.map(post => `
+    <div class="card" style="cursor:default; padding:12px;">
+      <b>${post.name}</b>
+      <p style="font-size:12px; margin:4px 0;">${post.content}</p>
+      <button class="btn btn-danger btn-sm" onclick="deletePost(${post.id})">削除</button>
+    </div>
+  `).join('') || "<p style='color:gray; font-size:13px;'>登録商品はまだありません。</p>";
+}
+
+function submitPost() {
+  const name = document.getElementById('postName').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  if (!name || !content) return alert("項目を入力してください。");
+
+  const newPost = { id: Date.now(), shopId: currentShop.id, name: name, content: content, limit: 5, image: currentShop.img };
+  const posts = getPosts();
+  posts.push(newPost);
+  savePosts(posts);
+  renderShopAdminPosts();
+}
+
+function deletePost(postId) {
+  let posts = getPosts().filter(p => p.id !== postId);
+  savePosts(posts);
+  renderShopAdminPosts();
+}
+
+updateHeaderCustomerStatus();
+</script>
+</body>
+</html>
