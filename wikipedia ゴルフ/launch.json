@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wikigolf",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8843"],
+      "port": 8843
+    }
+  ]
+}
