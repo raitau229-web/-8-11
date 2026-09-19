@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wikipedia ゴルフ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>⛳ Wikipedia ゴルフ</h1>
+    <label class="lang-switch">
+      言語
+      <select id="lang-select">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+  </header>
+
+  <section class="game-bar" id="game-bar" hidden>
+    <div class="badges">
+      <div class="badge badge-start">
+        <span class="badge-label">スタート</span>
+        <span class="badge-title" id="start-title">-</span>
+      </div>
+      <span class="badge-arrow">→</span>
+      <div class="badge badge-goal">
+        <span class="badge-label">ゴール</span>
+        <span class="badge-title" id="goal-title">-</span>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-value" id="click-count">0</span>
+        <span class="stat-label">クリック</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="timer">00:00</span>
+        <span class="stat-label">タイム</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="preview-goal-btn" class="btn btn-secondary">ゴール記事を見る</button>
+      <button id="new-game-btn" class="btn">新しいゲーム</button>
+      <button id="history-btn" class="btn btn-secondary">履歴・ランキング</button>
+    </div>
+  </section>
+
+  <nav class="breadcrumb" id="breadcrumb" hidden aria-label="辿った記事の道のり"></nav>
+
+  <main class="article-container" id="article-container">
+    <div class="start-screen" id="start-screen">
+      <p>ランダムに選ばれた2つの記事の間を、記事内の<strong>内部リンクだけ</strong>を辿って最短でつなげよう。</p>
+      <p class="hint">クリック数とタイムが記録され、ランキングと履歴に残ります。</p>
+      <button id="start-btn" class="btn btn-large">ゲーム開始</button>
+    </div>
+    <div class="loading" id="loading" hidden>読み込み中...</div>
+    <div class="article-view" id="article-view" hidden></div>
+  </main>
+
+  <div class="modal-overlay" id="win-modal" hidden>
+    <div class="modal">
+      <h2>🎉 ゴール到達!</h2>
+      <p id="win-summary"></p>
+      <div class="modal-actions">
+        <button id="win-newgame-btn" class="btn btn-large">もう一度</button>
+        <button id="win-close-btn" class="btn btn-secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="goal-preview-modal" hidden>
+    <div class="modal modal-large">
+      <h2>ゴール記事プレビュー</h2>
+      <p class="hint">閲覧するだけならクリック数・タイムには影響しません。ここでのリンクは辿れません。</p>
+      <div class="loading" id="goal-preview-loading" hidden>読み込み中...</div>
+      <div class="article-view article-view-preview" id="goal-preview-view"></div>
+      <div class="modal-actions">
+        <button id="goal-preview-close-btn" class="btn btn-secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="history-modal" hidden>
+    <div class="modal modal-large">
+      <h2>履歴・ランキング</h2>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="ranking">ベストランキング</button>
+        <button class="tab-btn" data-tab="history">履歴</button>
+      </div>
+      <div class="list-panel" id="ranking-list"></div>
+      <div class="list-panel" id="history-list" hidden></div>
+      <div class="modal-actions">
+        <button id="clear-history-btn" class="btn btn-danger">履歴を消去</button>
+        <button id="history-close-btn" class="btn btn-secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
