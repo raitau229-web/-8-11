@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import SearchBox from "@/components/SearchBox";
 import type { Course } from "@/lib/database.types";
+
+const NO_COURSES_MESSAGE =
+  "登録されている授業がまだありません。「授業マスタ管理」から登録してください。";
 
 export default async function Home({
   searchParams,
@@ -9,7 +12,7 @@ export default async function Home({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const supabase = await createClient();
+  const supabase = createClient();
 
   let query = supabase
     .from("courses")
@@ -39,7 +42,7 @@ export default async function Home({
         <p className="text-sm text-gray-500">
           {q
             ? "該当する授業が見つかりませんでした。"
-            : "登録されている授業がまだありません。管理者に授業マスタの登録を依頼してください。"}
+            : NO_COURSES_MESSAGE}
         </p>
       )}
 

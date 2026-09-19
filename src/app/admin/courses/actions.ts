@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 
 export type ActionResult = { success: boolean; message: string };
 
@@ -16,7 +16,7 @@ export async function addCourse(
     return { success: false, message: "授業名を入力してください。" };
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase.from("courses").insert({
     name,
     department,
@@ -61,7 +61,7 @@ export async function bulkImportCourses(
     };
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error, count } = await supabase
     .from("courses")
     .upsert(rows, { onConflict: "name,department", ignoreDuplicates: true, count: "exact" });

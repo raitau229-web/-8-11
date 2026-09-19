@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase";
 import type { CourseOffering } from "@/lib/database.types";
 
 const NEW_OFFERING_VALUE = "__new__";
@@ -85,10 +85,6 @@ export default function UploadForm({
         }
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       const filePath = `${courseId}/${targetOfferingId}/${Date.now()}-${sanitizeFileName(
         file.name,
       )}`;
@@ -105,7 +101,6 @@ export default function UploadForm({
         file_name: file.name,
         exam_type: examType.trim() || null,
         note: note.trim() || null,
-        uploaded_by: user?.id ?? null,
       });
 
       if (examInsertError) throw examInsertError;

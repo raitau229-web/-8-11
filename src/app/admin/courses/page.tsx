@@ -1,21 +1,10 @@
-import { redirect } from "next/navigation";
-import { getCurrentUserAndProfile } from "@/lib/profile";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import type { Course } from "@/lib/database.types";
 import AddCourseForm from "./AddCourseForm";
 import BulkImportForm from "./BulkImportForm";
 
 export default async function AdminCoursesPage() {
-  const { user, profile } = await getCurrentUserAndProfile();
-
-  if (!user) {
-    redirect("/login");
-  }
-  if (!profile?.is_admin) {
-    redirect("/");
-  }
-
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: courses } = await supabase
     .from("courses")
     .select("*")

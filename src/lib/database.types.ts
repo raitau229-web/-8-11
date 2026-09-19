@@ -20,13 +20,5 @@ export type Exam = {
   file_path: string;
   file_name: string;
   note: string | null;
-  uploaded_by: string | null;
-  created_at: string;
-};
-
-export type Profile = {
-  id: string;
-  display_name: string | null;
-  is_admin: boolean;
   created_at: string;
 };

@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import type { Course, CourseOffering, Exam } from "@/lib/database.types";
 import UploadForm from "./UploadForm";
 
 type OfferingWithExams = CourseOffering & {
-  exams: (Exam & { signedUrl: string | null })[];
+  exams: (Exam & { publicUrl: string })[];
 };
 
 export default async function CourseDetailPage({
@@ -13,7 +13,7 @@ export default async function CourseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: course } = await supabase
     .from("courses")
@@ -44,14 +44,11 @@ export default async function CourseDetailPage({
         .returns<Exam[]>()
     : { data: [] as Exam[] };
 
-  const examsWithUrls = await Promise.all(
-    (exams ?? []).map(async (exam) => {
-      const { data: signed } = await supabase.storage
-        .from("exams")
-        .createSignedUrl(exam.file_path, 60 * 60);
-      return { ...exam, signedUrl: signed?.signedUrl ?? null };
-    }),
-  );
+  const examsWithUrls = (exams ?? []).map((exam) => ({
+    ...exam,
+    publicUrl: supabase.storage.from("exams").getPublicUrl(exam.file_path)
+      .data.publicUrl,
+  }));
 
   const offeringsWithExams: OfferingWithExams[] = (offerings ?? []).map(
     (offering) => ({
@@ -116,20 +113,14 @@ export default async function CourseDetailPage({
                       <ul className="flex flex-col gap-1">
                         {offering.exams.map((exam) => (
                           <li key={exam.id} className="text-sm">
-                            {exam.signedUrl ? (
-                              <a
-                                href={exam.signedUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                              >
-                                {exam.file_name}
-                              </a>
-                            ) : (
-                              <span className="text-gray-400">
-                                {exam.file_name}(取得エラー)
-                              </span>
-                            )}
+                            <a
+                              href={exam.publicUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              {exam.file_name}
+                            </a>
                             {exam.exam_type && (
                               <span className="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
                                 {exam.exam_type}
